@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns="urn:ihe:iti:xds-b:2007" xmlns:urn1="urn:oasis:names:tc:ebxml-regrep:xsd:lcm:3.0" xmlns:urn2="urn:oasis:names:tc:ebxml-regrep:xsd:rs:3.0" xmlns:urn3="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0" xmlns:a="http://www.w3.org/2005/08/addressing">
+<soap:Header>
+</soap:Header>
+<soap:Body>
+  <query:AdhocQueryRequest xmlns:query="urn:oasis:names:tc:ebxml-regrep:xsd:query:3.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rim="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0" xmlns:rs="urn:oasis:names:tc:ebxml-regrep:xsd:rs:3.0" xsi:schemaLocation="urn:oasis:names:tc:ebxml-regrep:xsd:query:3.0 ../../schema/ebRS/query.xsd">
+    <query:ResponseOption returnComposedObjects="true" returnType="LeafClass"></query:ResponseOption>
+    <rim:AdhocQuery id="urn:uuid:14d4debf-8f97-4251-9a74-a90016b0af0d">
+      <rim:Slot name="$XDSDocumentEntryPatientId">
+        <rim:ValueList>
+          <rim:Value>'ECID1^^^&amp;ECID&amp;ISO'</rim:Value>
+        </rim:ValueList>
+      </rim:Slot>
+      <rim:Slot name="$XDSDocumentEntryStatus">
+        <rim:ValueList>
+          <rim:Value>urn:oasis:names:tc:ebxml-regrep:StatusType:Approved</rim:Value>
+        </rim:ValueList>
+      </rim:Slot>
+      <rim:Slot name="$XDSDocumentEntryCreationTimeFrom">
+        <rim:ValueList>
+          <rim:Value>201201010800</rim:Value>
+        </rim:ValueList>
+      </rim:Slot>
+      <rim:Slot name="$XDSDocumentEntryCreationTimeTo">
+        <rim:ValueList>
+          <rim:Value>201410010800</rim:Value>
+        </rim:ValueList>
+      </rim:Slot>
+    </rim:AdhocQuery>
+  </query:AdhocQueryRequest>
+</soap:Body>
+</soap:Envelope>

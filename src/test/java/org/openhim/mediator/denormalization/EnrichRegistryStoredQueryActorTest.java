@@ -8,6 +8,7 @@ import org.apache.commons.io.IOUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.openhim.mediator.datatypes.AssigningAuthority;
 import org.openhim.mediator.datatypes.Identifier;
 import org.openhim.mediator.messages.EnrichRegistryStoredQuery;
 import org.openhim.mediator.messages.EnrichRegistryStoredQueryResponse;
@@ -43,7 +44,7 @@ public class EnrichRegistryStoredQueryActorTest {
         new JavaTestKit(system) {{
             ActorRef actor = system.actorOf(Props.create(EnrichRegistryStoredQueryActor.class));
 
-            Identifier id = new Identifier("ECID1", "ECID");
+            Identifier id = new Identifier("ECID1", new AssigningAuthority("ECID", "ECID"));
             EnrichRegistryStoredQuery msg = new EnrichRegistryStoredQuery(getRef(), getRef(), testAdhocRequest, id);
             actor.tell(msg, getRef());
 

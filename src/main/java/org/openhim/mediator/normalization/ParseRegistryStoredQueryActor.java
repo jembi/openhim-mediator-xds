@@ -5,6 +5,7 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
+import org.openhim.mediator.datatypes.AssigningAuthority;
 import org.openhim.mediator.datatypes.Identifier;
 import org.openhim.mediator.engine.messages.ExceptError;
 import org.openhim.mediator.engine.messages.FinishRequest;
@@ -47,8 +48,9 @@ public class ParseRegistryStoredQueryActor extends UntypedActor {
     private Identifier parsePatientID_CX(String patientID_CX) throws CX_ParseException {
         try {
             String patientID = patientID_CX.substring(0, patientID_CX.indexOf('^'));
-            String assigningAuthority = patientID_CX.substring(patientID_CX.indexOf('&') + 1, patientID_CX.lastIndexOf('&'));
-            return new Identifier(patientID, assigningAuthority);
+            String assigningAuthority = patientID_CX.substring(patientID_CX.lastIndexOf('^') + 1, patientID_CX.indexOf('&'));
+            String assigningAuthorityId = patientID_CX.substring(patientID_CX.indexOf('&') + 1, patientID_CX.lastIndexOf('&'));
+            return new Identifier(patientID, new AssigningAuthority(assigningAuthority, assigningAuthorityId));
         } catch (ArrayIndexOutOfBoundsException ex) {
             throw new CX_ParseException(ex);
         }

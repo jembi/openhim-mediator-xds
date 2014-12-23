@@ -1,19 +1,19 @@
 package org.openhim.mediator.datatypes;
 
 public class Identifier {
-    private String assigningAuthority;
     private String identifier;
+    private AssigningAuthority assigningAuthority;
 
-    public Identifier(String identifier, String assigningAuthority) {
+    public Identifier(String identifier, AssigningAuthority assigningAuthority) {
         this.assigningAuthority = assigningAuthority;
         this.identifier = identifier;
     }
 
-    public String getAssigningAuthority() {
+    public AssigningAuthority getAssigningAuthority() {
         return assigningAuthority;
     }
 
-    public void setAssigningAuthority(String assigningAuthority) {
+    public void setAssigningAuthority(AssigningAuthority assigningAuthority) {
         this.assigningAuthority = assigningAuthority;
     }
 
@@ -26,6 +26,9 @@ public class Identifier {
     }
 
     public String toString() {
-        return String.format("%s^^^&%s&ISO", identifier, assigningAuthority);
+        if (assigningAuthority!=null) {
+            return String.format("%s^^^%s&%s&ISO", identifier, assigningAuthority.getAssigningAuthority(), assigningAuthority.getAssigningAuthorityId());
+        }
+        return identifier + "^^^&&ISO";
     }
 }

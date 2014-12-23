@@ -12,10 +12,10 @@ import ca.uhn.hl7v2.model.v25.segment.MSH;
 import ca.uhn.hl7v2.parser.GenericParser;
 import ca.uhn.hl7v2.parser.Parser;
 import ca.uhn.hl7v2.util.Terser;
+import org.openhim.mediator.datatypes.AssigningAuthority;
 import org.openhim.mediator.datatypes.Identifier;
-import org.openhim.mediator.engine.messages.ExceptError;
-import org.openhim.mediator.engine.messages.MediatorHTTPRequest;
-import org.openhim.mediator.engine.messages.MediatorHTTPResponse;
+import org.openhim.mediator.engine.MediatorConfig;
+import org.openhim.mediator.engine.messages.*;
 import org.openhim.mediator.messages.*;
 
 import java.text.SimpleDateFormat;
@@ -32,9 +32,13 @@ import java.util.UUID;
 public class PIXRequestActor extends UntypedActor {
     LoggingAdapter log = Logging.getLogger(getContext().system(), this);
     private ActorRef respondTo;
+    private MediatorConfig config;
 
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmssZ");
 
+    public PIXRequestActor(MediatorConfig config) {
+        this.config = config;
+    }
 
     public String constructPIXQuery(ResolvePatientIdentifier msg) throws HL7Exception {
 
@@ -45,10 +49,10 @@ public class PIXRequestActor extends UntypedActor {
         t.set("MSH-1", "|");
         t.set("MSH-2", "^~\\&");
         //TODO config for sending/receiving apps
-        t.set("MSH-3-1", "mediator-xds");
-        t.set("MSH-4-1", "openhim");
-        t.set("MSH-5-1", "pix");
-        t.set("MSH-6-1", "pix");
+        t.set("MSH-3-1", config.getProperties().getProperty("pix.sendingApplication"));
+        t.set("MSH-4-1", config.getProperties().getProperty("pix.sendingFacility"));
+        t.set("MSH-5-1", config.getProperties().getProperty("pix.receivingApplication"));
+        t.set("MSH-6-1", config.getProperties().getProperty("pix.receivingFacility"));
         msh.getDateTimeOfMessage().getTime().setValue(dateFormat.format(new Date()));
         t.set("MSH-9-1", "QBP");
         t.set("MSH-9-2", "Q23");
@@ -62,11 +66,13 @@ public class PIXRequestActor extends UntypedActor {
         t.set("QPD-1-1", "IHE PIX Query");
         t.set("QPD-2", UUID.randomUUID().toString());
         t.set("QPD-3-1", msg.getIdentifier().getIdentifier());
-        t.set("QPD-3-4-2", msg.getIdentifier().getAssigningAuthority());
+        t.set("QPD-3-4", msg.getIdentifier().getAssigningAuthority().getAssigningAuthority());
+        t.set("QPD-3-4-2", msg.getIdentifier().getAssigningAuthority().getAssigningAuthorityId());
         t.set("QPD-3-4-3", "ISO");
         t.set("QPD-3-5", "PI");
 
-        t.set("QPD-4-4-2", msg.getTargetAssigningAuthority());
+        t.set("QPD-4-4", msg.getTargetAssigningAuthority().getAssigningAuthority());
+        t.set("QPD-4-4-2", msg.getTargetAssigningAuthority().getAssigningAuthorityId());
         t.set("QPD-4-4-3", "ISO");
         t.set("QPD-4-5", "PI");
 
@@ -89,25 +95,30 @@ public class PIXRequestActor extends UntypedActor {
             return null;
 
         String id = msg.getQUERY_RESPONSE().getPID().getPatientIdentifierList(0).getCx1_IDNumber().getValue();
-        String assigningAuthority = msg.getQUERY_RESPONSE().getPID().getPatientIdentifierList(0).getAssigningAuthority().getUniversalID().getValue();
+        String assigningAuthority = msg.getQUERY_RESPONSE().getPID().getPatientIdentifierList(0).getAssigningAuthority().getNamespaceID().getValue();
+        String assigningAuthorityId = msg.getQUERY_RESPONSE().getPID().getPatientIdentifierList(0).getAssigningAuthority().getUniversalID().getValue();
 
-        return new Identifier(id, assigningAuthority);
+        return new Identifier(id, new AssigningAuthority(assigningAuthority, assigningAuthorityId));
     }
 
     private void sendPIXRequest(ResolvePatientIdentifier msg) {
         try {
             String pixQuery = constructPIXQuery(msg);
 
-            //TODO Sending via http to dummy server for now
-            ActorSelection connector = getContext().actorSelection("/user/xds-mediator/http-connector");
-            MediatorHTTPRequest httpRequest = new MediatorHTTPRequest(msg.getRequestHandler(), getSelf(), "PIX Query", "POST", "http", "localhost", 3005, "/dummypix", pixQuery, null, null);
-            connector.tell(httpRequest, getSelf());
+            ActorSelection connector = getContext().actorSelection("/user/" + config.getName() + "/mllp-connector");
+            MediatorSocketRequest request = new MediatorSocketRequest(
+                    msg.getRequestHandler(), getSelf(), "PIX Resolve Enterprise Identifier",
+                    config.getProperties().getProperty("pix.manager.host"),
+                    Integer.parseInt(config.getProperties().getProperty("pix.manager.port")),
+                    pixQuery
+            );
+            connector.tell(request, getSelf());
         } catch (HL7Exception ex) {
             msg.getRequestHandler().tell(new ExceptError(ex), getSelf());
         }
     }
 
-    private void processResponse(MediatorHTTPResponse msg) {
+    private void processResponse(MediatorSocketResponse msg) {
         try {
             Identifier result = parseResponse(msg.getBody());
             respondTo.tell(new ResolvePatientIdentifierResponse(result), getSelf());
@@ -121,8 +132,8 @@ public class PIXRequestActor extends UntypedActor {
         if (msg instanceof ResolvePatientIdentifier) {
             respondTo = ((ResolvePatientIdentifier) msg).getRespondTo();
             sendPIXRequest((ResolvePatientIdentifier) msg);
-        } else if (msg instanceof MediatorHTTPResponse) {
-            processResponse((MediatorHTTPResponse) msg);
+        } else if (msg instanceof MediatorSocketResponse) {
+            processResponse((MediatorSocketResponse) msg);
         } else {
             unhandled(msg);
         }

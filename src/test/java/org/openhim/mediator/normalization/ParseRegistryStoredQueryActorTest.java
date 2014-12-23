@@ -45,7 +45,8 @@ public class ParseRegistryStoredQueryActorTest {
 
             ParsedRegistryStoredQuery result = expectMsgClass(Duration.create(100, TimeUnit.MILLISECONDS), ParsedRegistryStoredQuery.class);
             assertEquals("1234567890", result.getPatientId().getIdentifier());
-            assertEquals("1.2.3", result.getPatientId().getAssigningAuthority());
+            assertEquals("TestID", result.getPatientId().getAssigningAuthority().getAssigningAuthority());
+            assertEquals("1.2.3", result.getPatientId().getAssigningAuthority().getAssigningAuthorityId());
         }};
     }
 

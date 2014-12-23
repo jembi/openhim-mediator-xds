@@ -7,6 +7,7 @@ import akka.actor.UntypedActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import org.apache.http.HttpStatus;
+import org.openhim.mediator.datatypes.AssigningAuthority;
 import org.openhim.mediator.datatypes.Identifier;
 import org.openhim.mediator.denormalization.ResolveEnterpriseIdentifierActor;
 import org.openhim.mediator.engine.MediatorConfig;
@@ -44,13 +45,16 @@ public class RegistryActor extends UntypedActor {
         parseActor.tell(new SimpleMediatorRequest<String>(request.getRequestHandler(), getSelf(), message), getSelf());
     }
 
-    private void lookupECID(Identifier patientID) {
-        ActorRef resolvePatientIDActor = getContext().actorOf(Props.create(ResolveEnterpriseIdentifierActor.class));
-        ResolvePatientIdentifier msg = new ResolvePatientIdentifier(requestHandler, getSelf(), patientID, "ECID");
+    private void lookupEnterpriseIdentifier(Identifier patientID) {
+        ActorRef resolvePatientIDActor = getContext().actorOf(Props.create(ResolveEnterpriseIdentifierActor.class, config));
+        String enterpriseIdentifierAuthority = config.getProperties().getProperty("pix.requestedAssigningAuthority");
+        String enterpriseIdentifierAuthorityId = config.getProperties().getProperty("pix.requestedAssigningAuthorityId");
+        AssigningAuthority authority = new AssigningAuthority(enterpriseIdentifierAuthority, enterpriseIdentifierAuthorityId);
+        ResolvePatientIdentifier msg = new ResolvePatientIdentifier(requestHandler, getSelf(), patientID, authority);
         resolvePatientIDActor.tell(msg, getSelf());
     }
 
-    private void enrichECID(ResolvePatientIdentifierResponse msg) {
+    private void enrichEnterpriseIdentifier(ResolvePatientIdentifierResponse msg) {
         if (msg.getIdentifier()!=null) {
             log.info("Resolved patient enterprise identifier. Enriching message...");
             ActorSelection enrichActor = getContext().actorSelection("/user/" + config.getName() + "/enrich-registry-stored-query");
@@ -94,9 +98,9 @@ public class RegistryActor extends UntypedActor {
             parseMessage((MediatorHTTPRequest) msg);
         } else if (msg instanceof ParsedRegistryStoredQuery) {
             log.info("Parsed contents. Resolving patient enterprise identifier...");
-            lookupECID(((ParsedRegistryStoredQuery) msg).getPatientId());
+            lookupEnterpriseIdentifier(((ParsedRegistryStoredQuery) msg).getPatientId());
         } else if (msg instanceof ResolvePatientIdentifierResponse) {
-            enrichECID((ResolvePatientIdentifierResponse) msg);
+            enrichEnterpriseIdentifier((ResolvePatientIdentifierResponse) msg);
         } else if (msg instanceof EnrichRegistryStoredQueryResponse) {
             log.info("Sending enriched request to XDS.b Registry");
             forwardEnrichedMessage((EnrichRegistryStoredQueryResponse) msg);

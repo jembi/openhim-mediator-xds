@@ -1,6 +1,7 @@
 package org.openhim.mediator.messages;
 
 import akka.actor.ActorRef;
+import org.openhim.mediator.datatypes.AssigningAuthority;
 import org.openhim.mediator.datatypes.Identifier;
 import org.openhim.mediator.engine.messages.MediatorRequestMessage;
 
@@ -9,9 +10,9 @@ import org.openhim.mediator.engine.messages.MediatorRequestMessage;
  */
 public class ResolvePatientIdentifier extends MediatorRequestMessage {
     private final Identifier identifier;
-    private final String targetAssigningAuthority;
+    private final AssigningAuthority targetAssigningAuthority;
 
-    public ResolvePatientIdentifier(ActorRef requestHandler, ActorRef respondTo, Identifier identifier, String targetAssigningAuthority) {
+    public ResolvePatientIdentifier(ActorRef requestHandler, ActorRef respondTo, Identifier identifier, AssigningAuthority targetAssigningAuthority) {
         super(requestHandler, respondTo, "resolve-patient-identifier", null);
         this.identifier = identifier;
         this.targetAssigningAuthority = targetAssigningAuthority;
@@ -21,7 +22,7 @@ public class ResolvePatientIdentifier extends MediatorRequestMessage {
         return identifier;
     }
 
-    public String getTargetAssigningAuthority() {
+    public AssigningAuthority getTargetAssigningAuthority() {
         return targetAssigningAuthority;
     }
 }

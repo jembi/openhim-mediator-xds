@@ -64,7 +64,12 @@
     <artifactId>hapi-structures-v251</artifactId>
     <version>2.2</version>
   </dependency>
-    <!-- Testing dependencies -->
+  <dependency>
+    <groupId>com.sun.mail</groupId>
+    <artifactId>javax.mail</artifactId>
+    <version>1.5.2</version>
+  </dependency>
+  <!-- Testing dependencies -->
   <dependency>
     <groupId>junit</groupId>
     <artifactId>junit</artifactId>

@@ -1,0 +1,15 @@
+--MIMEBoundaryurn_uuid_76A2C3D9BCD3AECFF31217932910180
+Content-Type: application/xop+xml; charset=UTF-8; type="application/soap+xml"
+Content-Transfer-Encoding: binary
+Content-ID: <0.urn:uuid:76A2C3D9BCD3AECFF31217932910181@apache.org>
+
+My test
+--MIMEBoundaryurn_uuid_76A2C3D9BCD3AECFF31217932910180
+Content-Type: text/plain
+Content-Transfer-Encoding: binary
+Content-ID: <1.urn:uuid:76A2C3D9BCD3AECFF31217932910229@apache.org>
+
+This is my document.
+It is great!
+
+--MIMEBoundaryurn_uuid_76A2C3D9BCD3AECFF31217932910180--

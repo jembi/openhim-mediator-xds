@@ -4,13 +4,18 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
+import org.openhim.mediator.denormalization.ResolveEnterpriseIdentifierActor;
 import org.openhim.mediator.engine.MediatorConfig;
 import org.openhim.mediator.engine.messages.ExceptError;
 import org.openhim.mediator.engine.messages.FinishRequest;
 import org.openhim.mediator.engine.messages.MediatorHTTPRequest;
 import org.openhim.mediator.engine.messages.MediatorHTTPResponse;
+import org.openhim.mediator.messages.OrchestrateProvideAndRegisterRequest;
+import org.openhim.mediator.messages.OrchestrateProvideAndRegisterRequestResponse;
 import org.openhim.mediator.normalization.XDSbMimeProcessorActor;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
@@ -24,6 +29,8 @@ import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 
 public class RepositoryActor extends UntypedActor {
+
+    LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
     private MediatorConfig config;
 
@@ -51,6 +58,7 @@ public class RepositoryActor extends UntypedActor {
         } else {
             message = originalRequest.getBody();
             messageIsMTOM = false;
+            triggerRepositoryAction();
         }
     }
 
@@ -95,10 +103,27 @@ public class RepositoryActor extends UntypedActor {
         return subStr;
     }
 
-    private void processRepositoryAction() {
+    private void processProviderAndRegisterAction() {
+        ActorRef resolvePatientIDHandler = getContext().actorOf(Props.create(ResolveEnterpriseIdentifierActor.class, config));
+        ActorRef resolveProviderIDHandler = null;
+        ActorRef resolveFacilityIDHandler = null;
+        ActorRef pnrOrchestrator = getContext().actorOf(
+                Props.create(
+                        ProvideAndRegisterOrchestrationActor.class, config,
+                        resolvePatientIDHandler, resolveProviderIDHandler, resolveFacilityIDHandler
+                )
+        );
+
+        OrchestrateProvideAndRegisterRequest msg = new OrchestrateProvideAndRegisterRequest(
+                originalRequest.getRequestHandler(), getSelf(), message
+        );
+        pnrOrchestrator.tell(msg, getSelf());
+    }
+
+    private void triggerRepositoryAction() {
         if (determineSOAPAction()) {
             if ("urn:ihe:iti:2007:ProvideAndRegisterDocumentSet-b".equals(action)) {
-                //TODO PnR
+                processProviderAndRegisterAction();
             } else {
                 message = originalRequest.getBody();
                 forwardRequestToRepository();
@@ -130,13 +155,16 @@ public class RepositoryActor extends UntypedActor {
         } else if (msg instanceof XDSbMimeProcessorActor.XDSbMimeProcessorResponse) {
             if (((XDSbMimeProcessorActor.XDSbMimeProcessorResponse) msg).getOriginalRequest() instanceof XDSbMimeProcessorActor.MimeMessage) {
                 message = ((XDSbMimeProcessorActor.XDSbMimeProcessorResponse) msg).getResponseObject();
-                processRepositoryAction();
+                triggerRepositoryAction();
             } else if (((XDSbMimeProcessorActor.XDSbMimeProcessorResponse) msg).getOriginalRequest() instanceof XDSbMimeProcessorActor.EnrichedMessage) {
                 message = ((XDSbMimeProcessorActor.XDSbMimeProcessorResponse) msg).getResponseObject();
                 forwardRequestToRepository();
             } else {
                 unhandled(msg);
             }
+        } else if (msg instanceof OrchestrateProvideAndRegisterRequestResponse) {
+            message = ((OrchestrateProvideAndRegisterRequestResponse) msg).getResponseObject();
+            forwardRequestToRepository();
         } else if (msg instanceof MediatorHTTPResponse) {
             finalizeResponse((MediatorHTTPResponse) msg);
         } else {

@@ -1,6 +1,5 @@
 package org.openhim.mediator.denormalization;
 
-import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
 import akka.actor.UntypedActor;
 import akka.event.Logging;
@@ -20,6 +19,8 @@ import org.openhim.mediator.messages.*;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -31,7 +32,7 @@ import java.util.UUID;
  */
 public class PIXRequestActor extends UntypedActor {
     LoggingAdapter log = Logging.getLogger(getContext().system(), this);
-    private ActorRef respondTo;
+    private Map<String, ResolvePatientIdentifier> originalRequests = new HashMap<>();
     private MediatorConfig config;
 
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmssZ");
@@ -104,10 +105,12 @@ public class PIXRequestActor extends UntypedActor {
     private void sendPIXRequest(ResolvePatientIdentifier msg) {
         try {
             String pixQuery = constructPIXQuery(msg);
+            String correlationId = UUID.randomUUID().toString();
+            originalRequests.put(correlationId, msg);
 
             ActorSelection connector = getContext().actorSelection("/user/" + config.getName() + "/mllp-connector");
             MediatorSocketRequest request = new MediatorSocketRequest(
-                    msg.getRequestHandler(), getSelf(), "PIX Resolve Enterprise Identifier",
+                    msg.getRequestHandler(), getSelf(), "PIX Resolve Enterprise Identifier", correlationId,
                     config.getProperties().getProperty("pix.manager.host"),
                     Integer.parseInt(config.getProperties().getProperty("pix.manager.port")),
                     pixQuery
@@ -121,7 +124,8 @@ public class PIXRequestActor extends UntypedActor {
     private void processResponse(MediatorSocketResponse msg) {
         try {
             Identifier result = parseResponse(msg.getBody());
-            respondTo.tell(new ResolvePatientIdentifierResponse(result), getSelf());
+            ResolvePatientIdentifier originalRequest = originalRequests.get(msg.getOriginalRequest().getCorrelationId());
+            originalRequest.getRespondTo().tell(new ResolvePatientIdentifierResponse(originalRequest, result), getSelf());
         } catch (HL7Exception ex) {
             msg.getOriginalRequest().getRequestHandler().tell(new ExceptError(ex), getSelf());
         }
@@ -130,7 +134,6 @@ public class PIXRequestActor extends UntypedActor {
     @Override
     public void onReceive(Object msg) throws Exception {
         if (msg instanceof ResolvePatientIdentifier) {
-            respondTo = ((ResolvePatientIdentifier) msg).getRespondTo();
             sendPIXRequest((ResolvePatientIdentifier) msg);
         } else if (msg instanceof MediatorSocketResponse) {
             processResponse((MediatorSocketResponse) msg);

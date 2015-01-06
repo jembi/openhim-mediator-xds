@@ -8,21 +8,12 @@ import org.openhim.mediator.engine.messages.MediatorRequestMessage;
 /**
  * Lookup a patient identifier in a target domain.
  */
-public class ResolvePatientIdentifier extends MediatorRequestMessage {
-    private final Identifier identifier;
-    private final AssigningAuthority targetAssigningAuthority;
-
+public class ResolvePatientIdentifier extends BaseResolveIdentifier {
     public ResolvePatientIdentifier(ActorRef requestHandler, ActorRef respondTo, Identifier identifier, AssigningAuthority targetAssigningAuthority) {
-        super(requestHandler, respondTo, "resolve-patient-identifier", null);
-        this.identifier = identifier;
-        this.targetAssigningAuthority = targetAssigningAuthority;
+        this(requestHandler, respondTo, null, identifier, targetAssigningAuthority);
     }
 
-    public Identifier getIdentifier() {
-        return identifier;
-    }
-
-    public AssigningAuthority getTargetAssigningAuthority() {
-        return targetAssigningAuthority;
+    public ResolvePatientIdentifier(ActorRef requestHandler, ActorRef respondTo, String correlationId, Identifier identifier, AssigningAuthority targetAssigningAuthority) {
+        super(requestHandler, respondTo, "resolve-patient-identifier", correlationId, identifier, targetAssigningAuthority);
     }
 }

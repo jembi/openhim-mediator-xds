@@ -53,3 +53,8 @@ release.properties
 # --------------#
 *.iml
 .idea/
+
+# -----#
+# Misc #
+# -----#
+.DS_Store

@@ -10,6 +10,7 @@ import org.openhim.mediator.datatypes.Identifier;
 import org.openhim.mediator.engine.messages.ExceptError;
 import org.openhim.mediator.engine.messages.FinishRequest;
 import org.openhim.mediator.engine.messages.SimpleMediatorRequest;
+import org.openhim.mediator.exceptions.CXParseException;
 import org.openhim.mediator.messages.ParsedRegistryStoredQuery;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
@@ -45,25 +46,15 @@ public class ParseRegistryStoredQueryActor extends UntypedActor {
         return xpath.compile(String.format(BASE_XPATH_EXPRESSION, PATIENT_ID_SLOT_TYPE)).evaluate(doc);
     }
 
-    private Identifier parsePatientID_CX(String patientID_CX) throws CX_ParseException {
-        try {
-            String patientID = patientID_CX.substring(0, patientID_CX.indexOf('^'));
-            String assigningAuthority = patientID_CX.substring(patientID_CX.lastIndexOf('^') + 1, patientID_CX.indexOf('&'));
-            String assigningAuthorityId = patientID_CX.substring(patientID_CX.indexOf('&') + 1, patientID_CX.lastIndexOf('&'));
-            return new Identifier(patientID, new AssigningAuthority(assigningAuthority, assigningAuthorityId));
-        } catch (ArrayIndexOutOfBoundsException ex) {
-            throw new CX_ParseException(ex);
-        }
-    }
 
     private void processMsg(SimpleMediatorRequest<String> msg) {
         try {
             String patientID_CX = readPatientID(msg.getRequestObject());
             patientID_CX = patientID_CX.replace("'", "");
-            Identifier patientID = parsePatientID_CX(patientID_CX);
+            Identifier patientID = new Identifier(patientID_CX);
 
             msg.getRespondTo().tell(new ParsedRegistryStoredQuery(patientID), getSelf());
-        } catch (SAXException | CX_ParseException ex) {
+        } catch (SAXException | CXParseException ex) {
             FinishRequest fr = new FinishRequest(ex.getMessage(), "text/plain", HttpStatus.SC_BAD_REQUEST);
             msg.getRequestHandler().tell(fr, getSelf());
         } catch (ParserConfigurationException | IOException | XPathExpressionException ex) {
@@ -76,13 +67,6 @@ public class ParseRegistryStoredQueryActor extends UntypedActor {
             processMsg((SimpleMediatorRequest<String>) msg);
         } else {
             unhandled(msg);
-        }
-    }
-
-
-    public static class CX_ParseException extends Exception {
-        public CX_ParseException(Throwable cause) {
-            super("Failed to parse HL7 CX element", cause);
         }
     }
 }

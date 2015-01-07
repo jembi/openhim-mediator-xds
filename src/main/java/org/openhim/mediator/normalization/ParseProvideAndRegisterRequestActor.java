@@ -1,42 +1,45 @@
 package org.openhim.mediator.normalization;
 
 import akka.actor.UntypedActor;
+import ihe.iti.xds_b._2007.ProvideAndRegisterDocumentSetRequestType;
 import org.apache.commons.io.IOUtils;
-import org.openhim.mediator.engine.messages.ExceptError;
+import org.apache.http.HttpStatus;
+import org.openhim.mediator.engine.messages.FinishRequest;
 import org.openhim.mediator.engine.messages.SimpleMediatorRequest;
-import org.openhim.mediator.messages.ParsedProvideAndRegisterRequest;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
+import org.openhim.mediator.engine.messages.SimpleMediatorResponse;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.IOException;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
 
 /**
- * Parses XDS.b Provide and Register Document Set transactions. Only pulls out the info the HIM needs.
+ * Parses XDS.b Provide and Register Document Set transactions.
  * <br/><br/>
  * Messages supported:
  * <ul>
- *     <li>SimpleMediatorRequest<String> - responds with ParsedProvideAndRegisterRequest</li>
+ *     <li>SimpleMediatorRequest<String> - responds with SimpleMediatorResponse<></li>
  * </ul>
+ *
+ * TODO Parsing the DOM is really slow! Around 800ms during unit testing
  */
 public class ParseProvideAndRegisterRequestActor extends UntypedActor {
 
-    ParsedProvideAndRegisterRequest result;
-    Document document;
+    public ProvideAndRegisterDocumentSetRequestType parseRequest(String document) throws JAXBException {
+        JAXBContext jaxbContext = JAXBContext.newInstance("ihe.iti.xds_b._2007");
+        Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
+        JAXBElement result = (JAXBElement)(unmarshaller.unmarshal(IOUtils.toInputStream(document)));
+        return (ProvideAndRegisterDocumentSetRequestType) result.getValue();
+    }
+
 
     private void processMsg(SimpleMediatorRequest<String> msg) {
         try {
-            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            document = builder.parse(IOUtils.toInputStream(msg.getRequestObject()));
-            result = new ParsedProvideAndRegisterRequest();
-
-            //...
-
-            msg.getRespondTo().tell(result, getSelf());
-        } catch (ParserConfigurationException | SAXException | IOException ex) {
-            msg.getRequestHandler().tell(new ExceptError(ex), getSelf());
+            ProvideAndRegisterDocumentSetRequestType result = parseRequest(msg.getRequestObject());
+            msg.getRespondTo().tell(new SimpleMediatorResponse<>(msg, result), getSelf());
+        } catch (JAXBException ex) {
+            FinishRequest fr = new FinishRequest("Failed to parse XDS.b Provide and Register Document Set request: " + ex.getMessage(), "text/plain", HttpStatus.SC_BAD_REQUEST);
+            msg.getRequestHandler().tell(fr, getSelf());
         }
     }
 

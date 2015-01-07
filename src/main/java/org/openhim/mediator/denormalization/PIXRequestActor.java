@@ -49,7 +49,6 @@ public class PIXRequestActor extends UntypedActor {
         MSH msh = (MSH) t.getSegment("MSH");
         t.set("MSH-1", "|");
         t.set("MSH-2", "^~\\&");
-        //TODO config for sending/receiving apps
         t.set("MSH-3-1", config.getProperties().getProperty("pix.sendingApplication"));
         t.set("MSH-4-1", config.getProperties().getProperty("pix.sendingFacility"));
         t.set("MSH-5-1", config.getProperties().getProperty("pix.receivingApplication"));

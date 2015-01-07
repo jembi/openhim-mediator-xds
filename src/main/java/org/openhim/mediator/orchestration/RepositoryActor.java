@@ -16,6 +16,7 @@ import org.openhim.mediator.engine.messages.MediatorHTTPRequest;
 import org.openhim.mediator.engine.messages.MediatorHTTPResponse;
 import org.openhim.mediator.messages.OrchestrateProvideAndRegisterRequest;
 import org.openhim.mediator.messages.OrchestrateProvideAndRegisterRequestResponse;
+import org.openhim.mediator.normalization.SOAPWrapper;
 import org.openhim.mediator.normalization.XDSbMimeProcessorActor;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
@@ -39,6 +40,7 @@ public class RepositoryActor extends UntypedActor {
     private boolean messageIsMTOM;
     private String contentType;
     private String message;
+    private SOAPWrapper soapWrapper;
     private String action;
 
 
@@ -114,10 +116,16 @@ public class RepositoryActor extends UntypedActor {
                 )
         );
 
-        OrchestrateProvideAndRegisterRequest msg = new OrchestrateProvideAndRegisterRequest(
-                originalRequest.getRequestHandler(), getSelf(), message
-        );
-        pnrOrchestrator.tell(msg, getSelf());
+        try {
+            soapWrapper = new SOAPWrapper(message);
+            OrchestrateProvideAndRegisterRequest msg = new OrchestrateProvideAndRegisterRequest(
+                    originalRequest.getRequestHandler(), getSelf(), soapWrapper.getSoapBody()
+            );
+            pnrOrchestrator.tell(msg, getSelf());
+        } catch (SOAPWrapper.SOAPParseException ex) {
+            FinishRequest fr = new FinishRequest(ex.getMessage(), "text/plain", HttpStatus.SC_BAD_REQUEST);
+            originalRequest.getRequestHandler().tell(fr, getSelf());
+        }
     }
 
     private void triggerRepositoryAction() {
@@ -163,7 +171,8 @@ public class RepositoryActor extends UntypedActor {
                 unhandled(msg);
             }
         } else if (msg instanceof OrchestrateProvideAndRegisterRequestResponse) {
-            message = ((OrchestrateProvideAndRegisterRequestResponse) msg).getResponseObject();
+            soapWrapper.setSoapBody(((OrchestrateProvideAndRegisterRequestResponse) msg).getResponseObject());
+            message = soapWrapper.getFullDocument();
             forwardRequestToRepository();
         } else if (msg instanceof MediatorHTTPResponse) {
             finalizeResponse((MediatorHTTPResponse) msg);

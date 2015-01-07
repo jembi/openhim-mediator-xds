@@ -62,9 +62,10 @@ public class ProvideAndRegisterOrchestrationActorTest {
             actor.tell(testMsg, getRef());
 
             OrchestrateProvideAndRegisterRequestResponse response = expectMsgClass(
-                    Duration.create(100, TimeUnit.MILLISECONDS),
+                    Duration.create(5000, TimeUnit.MILLISECONDS),
                     OrchestrateProvideAndRegisterRequestResponse.class
             );
+            System.out.println(response.getResponseObject());
         }};
     }
 }

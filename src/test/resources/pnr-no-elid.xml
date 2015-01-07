@@ -1,14 +1,3 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<S:Envelope xmlns:S="http://www.w3.org/2003/05/soap-envelope">
-<S:Header>
-<To xmlns="http://www.w3.org/2005/08/addressing" xmlns:env="http://www.w3.org/2003/05/soap-envelope" env:mustUnderstand="true">http://localhost:8500/xdsrepository</To>
-<Action xmlns="http://www.w3.org/2005/08/addressing" xmlns:env="http://www.w3.org/2003/05/soap-envelope" env:mustUnderstand="true">urn:ihe:iti:2007:ProvideAndRegisterDocumentSet-b</Action>
-<ReplyTo xmlns="http://www.w3.org/2005/08/addressing" xmlns:env="http://www.w3.org/2003/05/soap-envelope" env:mustUnderstand="true">
-    <Address>http://www.w3.org/2005/08/addressing/anonymous</Address>
-</ReplyTo>
-<MessageID xmlns="http://www.w3.org/2005/08/addressing">uuid:0bc99081-b07d-4e12-beb5-7b8d66b92f42</MessageID>
-</S:Header>
-<S:Body>
 <xdsb:ProvideAndRegisterDocumentSetRequest xmlns:xdsb="urn:ihe:iti:xds-b:2007">
     <lcm:SubmitObjectsRequest xmlns:lcm="urn:oasis:names:tc:ebxml-regrep:xsd:lcm:3.0">
         <rim:RegistryObjectList xmlns:rim="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0">
@@ -270,5 +259,3 @@
     </lcm:SubmitObjectsRequest>
     <xdsb:Document id="Document01">TXkgdGVzdCBkb2N1bWVudA==</xdsb:Document>
 </xdsb:ProvideAndRegisterDocumentSetRequest>
-</S:Body>
-</S:Envelope>

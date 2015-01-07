@@ -4,12 +4,13 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.testkit.JavaTestKit;
+import ihe.iti.xds_b._2007.ProvideAndRegisterDocumentSetRequestType;
 import org.apache.commons.io.IOUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openhim.mediator.engine.messages.SimpleMediatorRequest;
-import org.openhim.mediator.messages.ParsedProvideAndRegisterRequest;
+import org.openhim.mediator.engine.messages.SimpleMediatorResponse;
 import scala.concurrent.duration.Duration;
 
 import java.io.InputStream;
@@ -43,7 +44,8 @@ public class ParseProvideAndRegisterRequestActorTest {
             SimpleMediatorRequest<String> testMsg = new SimpleMediatorRequest<String>(getRef(), getRef(), testPnR);
             actor.tell(testMsg, getRef());
 
-            ParsedProvideAndRegisterRequest result = expectMsgClass(Duration.create(100, TimeUnit.MILLISECONDS), ParsedProvideAndRegisterRequest.class);
+            SimpleMediatorResponse result = expectMsgClass(Duration.create(5000, TimeUnit.MILLISECONDS), SimpleMediatorResponse.class);
+            assertTrue(SimpleMediatorResponse.isInstanceOf(ProvideAndRegisterDocumentSetRequestType.class, result));
         }};
     }
 }

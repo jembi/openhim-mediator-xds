@@ -25,7 +25,7 @@ import javax.xml.bind.Unmarshaller;
  */
 public class ParseProvideAndRegisterRequestActor extends UntypedActor {
 
-    public ProvideAndRegisterDocumentSetRequestType parseRequest(String document) throws JAXBException {
+    public static ProvideAndRegisterDocumentSetRequestType parseRequest(String document) throws JAXBException {
         JAXBContext jaxbContext = JAXBContext.newInstance("ihe.iti.xds_b._2007");
         Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
         JAXBElement result = (JAXBElement)(unmarshaller.unmarshal(IOUtils.toInputStream(document)));

@@ -1,7 +1,12 @@
 package org.openhim.mediator.dummies;
 
 import akka.actor.UntypedActor;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
 import org.openhim.mediator.datatypes.Identifier;
+import org.openhim.mediator.engine.messages.MediatorRequestMessage;
+import org.openhim.mediator.messages.BaseResolveIdentifier;
+import org.openhim.mediator.messages.BaseResolveIdentifierResponse;
 import org.openhim.mediator.messages.ResolvePatientIdentifier;
 
 import java.util.List;
@@ -21,25 +26,34 @@ public class DummyResolveIdentifierActor extends UntypedActor {
         public boolean wasSeen() {
             return seen;
         }
+
+        public Identifier getIdentifier() {
+            return identifier;
+        }
     }
+
+    LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+
     private ExpectedRequest expectedRequest;
     private List<ExpectedRequest> expectedRequests;
-    private Class expectedMessageClass;
-    private Object response;
+    private Class<BaseResolveIdentifier> expectedMessageClass;
+    private Class<BaseResolveIdentifierResponse> responseClass;
+    private Identifier responseIdentifier;
 
-    public DummyResolveIdentifierActor(Class expectedMessageClass, Object response, ExpectedRequest expectedRequest) {
-        this(expectedMessageClass, response);
+    public DummyResolveIdentifierActor(Class expectedMessageClass, Class<BaseResolveIdentifierResponse> responseClass, Identifier responseIdentifier, ExpectedRequest expectedRequest) {
+        this(expectedMessageClass, responseClass, responseIdentifier);
         this.expectedRequest = expectedRequest;
     }
 
-    public DummyResolveIdentifierActor(Class expectedMessageClass, Object response, List<ExpectedRequest> expectedRequests) {
-        this(expectedMessageClass, response);
+    public DummyResolveIdentifierActor(Class expectedMessageClass, Class<BaseResolveIdentifierResponse> responseClass, Identifier responseIdentifier, List<ExpectedRequest> expectedRequests) {
+        this(expectedMessageClass, responseClass, responseIdentifier);
         this.expectedRequests = expectedRequests;
     }
 
-    public DummyResolveIdentifierActor(Class expectedMessageClass, Object response) {
+    public DummyResolveIdentifierActor(Class expectedMessageClass, Class<BaseResolveIdentifierResponse> responseClass, Identifier responseIdentifier) {
         this.expectedMessageClass = expectedMessageClass;
-        this.response = response;
+        this.responseClass = responseClass;
+        this.responseIdentifier = responseIdentifier;
     }
 
     @Override
@@ -56,6 +70,15 @@ public class DummyResolveIdentifierActor extends UntypedActor {
                 }
             }
 
+            log.info(
+                    String.format(
+                            "Received request to resolve '%s' in the '%s' domain",
+                            expectedMessageClass.cast(msg).getIdentifier(),
+                            expectedMessageClass.cast(msg).getTargetAssigningAuthority().getAssigningAuthorityId()
+                    )
+            );
+
+            Object response = responseClass.getConstructor(MediatorRequestMessage.class, Identifier.class).newInstance(msg, responseIdentifier);
             getSender().tell(response, getSelf());
         } else {
             fail("Unexpected message received: " + msg.getClass());

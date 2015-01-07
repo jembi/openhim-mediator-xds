@@ -64,7 +64,7 @@ public class DummyResolveIdentifierActor extends UntypedActor {
                 expectedRequest.seen = true;
             } else if (expectedRequests!=null) {
                 for (ExpectedRequest er : expectedRequests) {
-                    if (er.identifier.equals(((ResolvePatientIdentifier) msg).getIdentifier())) {
+                    if (er.identifier.equals(expectedMessageClass.cast(msg).getIdentifier())) {
                         er.seen = true;
                     }
                 }

@@ -227,12 +227,12 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
                 }
 
                 if (localProviderID!=null) {
-                    Identifier id = new Identifier(localProviderID, new AssigningAuthority(localProviderIDAssigningAuthority, localProviderIDAssigningAuthority));
+                    Identifier id = new Identifier(localProviderID, new AssigningAuthority("", localProviderIDAssigningAuthority));
                     enterpriseHealthcareWorkerIds.add(new HealthcareWorkerIdentifierMapping(id, personSlotValList));
                 }
 
                 if (localLocationID!=null) {
-                    Identifier id = new Identifier(localLocationID, new AssigningAuthority(localLocationIDAssigningAuthority, localLocationIDAssigningAuthority));
+                    Identifier id = new Identifier(localLocationID, new AssigningAuthority("", localLocationIDAssigningAuthority));
                     enterpriseFacilityIds.add(new FacilityIdentifierMapping(id, localLocationName, institutionSlotValList));
                 }
             }
@@ -334,7 +334,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
 
     private boolean checkAndRespondIfAllResolved() {
         if (areAllIdentifiersResolved()) {
-            log.info("All identifiers resolved");
+            log.info("All identifiers resolved. Responding with enriched document.");
             try {
                 String xml = Util.marshallJAXBObject("ihe.iti.xds_b._2007", new ObjectFactory().createProvideAndRegisterDocumentSetRequest(parsedRequest), false);
                 OrchestrateProvideAndRegisterRequestResponse response = new OrchestrateProvideAndRegisterRequestResponse(originalRequest, xml);

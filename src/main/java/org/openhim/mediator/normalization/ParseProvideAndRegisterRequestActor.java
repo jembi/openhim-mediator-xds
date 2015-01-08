@@ -20,8 +20,6 @@ import javax.xml.bind.Unmarshaller;
  * <ul>
  *     <li>SimpleMediatorRequest<String> - responds with SimpleMediatorResponse<></li>
  * </ul>
- *
- * TODO Parsing the DOM is really slow! Around 800ms during unit testing
  */
 public class ParseProvideAndRegisterRequestActor extends UntypedActor {
 

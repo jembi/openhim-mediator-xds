@@ -18,10 +18,7 @@ import org.openhim.mediator.engine.messages.*;
 import org.openhim.mediator.messages.*;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Messages supported:
@@ -141,9 +138,9 @@ public class PIXRequestActor extends UntypedActor {
     private void sendAuditMessage(Identifier resolvedId, MediatorSocketResponse msg) {
         try {
             ATNAAudit audit = new ATNAAudit(ATNAAudit.TYPE.PIX_REQUEST);
-            audit.setMessage(((MediatorSocketRequest)msg.getOriginalRequest()).getBody());
-            audit.setPatientIdentifier(resolvedId);
-            audit.setMsh10(controlIds.remove(msg.getOriginalRequest().getCorrelationId()));
+            audit.setMessage(((MediatorSocketRequest) msg.getOriginalRequest()).getBody());
+            audit.setParticipantIdentifiers(Collections.singletonList(resolvedId));
+            audit.setUniqueId(controlIds.remove(msg.getOriginalRequest().getCorrelationId()));
 
             getContext().actorSelection("/user/" + config.getName() + "/atna-auditing").tell(audit, getSelf());
         } catch (Exception ex) {

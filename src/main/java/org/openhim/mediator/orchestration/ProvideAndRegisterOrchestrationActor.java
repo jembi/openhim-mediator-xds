@@ -107,7 +107,8 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
     private final ActorRef resolveFacilityIdHandler;
     private OrchestrateProvideAndRegisterRequest originalRequest;
 
-    private String request;
+    private String messageBuffer;
+    private String xForwardedFor;
     private ProvideAndRegisterDocumentSetRequestType parsedRequest;
     private List<IdentifierMapping> enterprisePatientIds = new ArrayList<>();
     private List<IdentifierMapping> enterpriseHealthcareWorkerIds = new ArrayList<>();
@@ -124,9 +125,9 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
 
     private void parseRequest(OrchestrateProvideAndRegisterRequest msg) {
         log.info("Parsing Xds.b Provide and Register request");
-        request = msg.getRequestObject();
+        messageBuffer = msg.getRequestObject();
         ActorRef parseHandler = getContext().actorOf(Props.create(ParseProvideAndRegisterRequestActor.class), "xds-pnr-document-normalization");
-        parseHandler.tell(new SimpleMediatorRequest<>(msg.getRequestHandler(), getSelf(), request), getSelf());
+        parseHandler.tell(new SimpleMediatorRequest<>(msg.getRequestHandler(), getSelf(), messageBuffer), getSelf());
     }
 
     private void processParsedRequest(ProvideAndRegisterDocumentSetRequestType doc) {
@@ -140,6 +141,8 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         } catch (ValidationException ex) {
             FinishRequest fr = new FinishRequest(ex.getMessage(), "text/plain", HttpStatus.SC_BAD_REQUEST);
             originalRequest.getRequestHandler().tell(fr, getSelf());
+        } finally {
+            sendAuditMessage(ATNAAudit.TYPE.PROVIDE_AND_REGISTER_RECEIVED);
         }
     }
 
@@ -329,15 +332,41 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         if (areAllIdentifiersResolved()) {
             log.info("All identifiers resolved. Responding with enriched document.");
             try {
-                String xml = Util.marshallJAXBObject("ihe.iti.xds_b._2007", new ObjectFactory().createProvideAndRegisterDocumentSetRequest(parsedRequest), false);
-                OrchestrateProvideAndRegisterRequestResponse response = new OrchestrateProvideAndRegisterRequestResponse(originalRequest, xml);
+                messageBuffer = Util.marshallJAXBObject("ihe.iti.xds_b._2007", new ObjectFactory().createProvideAndRegisterDocumentSetRequest(parsedRequest), false);
+                OrchestrateProvideAndRegisterRequestResponse response = new OrchestrateProvideAndRegisterRequestResponse(originalRequest, messageBuffer);
                 originalRequest.getRespondTo().tell(response, getSelf());
             } catch (JAXBException ex) {
                 originalRequest.getRequestHandler().tell(new ExceptError(ex), getSelf());
+            } finally {
+                sendAuditMessage(ATNAAudit.TYPE.PROVIDE_AND_REGISTER_RESPONSE);
             }
             return true;
         }
         return false;
+    }
+
+    private void sendAuditMessage(ATNAAudit.TYPE type) {
+        try {
+            ATNAAudit audit = new ATNAAudit(type);
+            audit.setMessage(messageBuffer);
+
+            List<Identifier> participants = new ArrayList<>(enterprisePatientIds.size());
+            for (IdentifierMapping mapping : enterprisePatientIds) {
+                participants.add(mapping.fromId);
+            }
+            audit.setParticipantIdentifiers(participants);
+
+            RegistryPackageType regPac = InfosetUtil.getRegistryPackage(parsedRequest.getSubmitObjectsRequest(), XDSConstants.UUID_XDSSubmissionSet);
+            String uniqueId = InfosetUtil.getExternalIdentifierValue(XDSConstants.UUID_XDSSubmissionSet_uniqueId, regPac);
+            audit.setUniqueId(uniqueId);
+            //TODO failed outcome
+            audit.setOutcome(true);
+            audit.setSourceIP(xForwardedFor);
+
+            getContext().actorSelection("/user/" + config.getName() + "/atna-auditing").tell(audit, getSelf());
+        } catch (Exception ex) {
+            //quiet you!
+        }
     }
 
     private boolean areAllIdentifiersResolved() {
@@ -361,6 +390,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         if (msg instanceof OrchestrateProvideAndRegisterRequest) {
             log.info("Orchestrating XDS.b Provide and Register request");
             originalRequest = (OrchestrateProvideAndRegisterRequest) msg;
+            xForwardedFor = ((OrchestrateProvideAndRegisterRequest) msg).getXForwardedFor();
             parseRequest((OrchestrateProvideAndRegisterRequest) msg);
         } else if (SimpleMediatorResponse.isInstanceOf(ProvideAndRegisterDocumentSetRequestType.class, msg)) {
             processParsedRequest(((SimpleMediatorResponse<ProvideAndRegisterDocumentSetRequestType>) msg).getResponseObject());

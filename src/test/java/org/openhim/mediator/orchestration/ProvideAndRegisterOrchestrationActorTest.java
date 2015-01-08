@@ -109,7 +109,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
         final String testPnR = IOUtils.toString(testPnRIn);
 
         ActorRef actor = system.actorOf(Props.create(ProvideAndRegisterOrchestrationActor.class, testConfig, resolvePIDDummy, resolveHWIDDummy, resolveFIDDummy));
-        OrchestrateProvideAndRegisterRequest testMsg = new OrchestrateProvideAndRegisterRequest(ref, ref, testPnR);
+        OrchestrateProvideAndRegisterRequest testMsg = new OrchestrateProvideAndRegisterRequest(ref, ref, testPnR, null);
 
         actor.tell(testMsg, ref);
     }

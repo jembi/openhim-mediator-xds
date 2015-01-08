@@ -2,15 +2,20 @@ package org.openhim.mediator.messages;
 
 import org.openhim.mediator.datatypes.Identifier;
 
+import java.util.List;
+
 public class ATNAAudit {
     public static enum TYPE {
-        PIX_REQUEST
+        PIX_REQUEST, REGISTRY_QUERY_RECEIVED, REGISTRY_QUERY_RESPONSE, PROVIDE_AND_REGISTER_RECEIVED, PROVIDE_AND_REGISTER_RESPONSE
     }
 
     private final TYPE type;
     private String message;
-    private Identifier patientIdentifier;
-    private String msh10;
+    private List<Identifier> participantIdentifiers;
+    private String uniqueId;
+    private boolean outcome;
+    private String homeCommunityId;
+    private String sourceIP;
 
 
     public ATNAAudit(TYPE type) {
@@ -30,19 +35,43 @@ public class ATNAAudit {
         this.message = message;
     }
 
-    public Identifier getPatientIdentifier() {
-        return patientIdentifier;
+    public List<Identifier> getParticipantIdentifiers() {
+        return participantIdentifiers;
     }
 
-    public void setPatientIdentifier(Identifier patientIdentifier) {
-        this.patientIdentifier = patientIdentifier;
+    public void setParticipantIdentifiers(List<Identifier> participantIdentifiers) {
+        this.participantIdentifiers = participantIdentifiers;
     }
 
-    public String getMsh10() {
-        return msh10;
+    public String getUniqueId() {
+        return uniqueId;
     }
 
-    public void setMsh10(String msh10) {
-        this.msh10 = msh10;
+    public void setUniqueId(String uniqueId) {
+        this.uniqueId = uniqueId;
+    }
+
+    public boolean getOutcome() {
+        return outcome;
+    }
+
+    public void setOutcome(boolean outcome) {
+        this.outcome = outcome;
+    }
+
+    public String getHomeCommunityId() {
+        return homeCommunityId;
+    }
+
+    public void setHomeCommunityId(String homeCommunityId) {
+        this.homeCommunityId = homeCommunityId;
+    }
+
+    public String getSourceIP() {
+        return sourceIP;
+    }
+
+    public void setSourceIP(String sourceIP) {
+        this.sourceIP = sourceIP;
     }
 }

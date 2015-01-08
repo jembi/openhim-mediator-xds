@@ -42,6 +42,7 @@ public class RepositoryActor extends UntypedActor {
     private MediatorHTTPRequest originalRequest;
 
     private String action;
+    private String xForwardedFor;
     private String contentType;
     private boolean messageIsMTOM;
 
@@ -141,7 +142,7 @@ public class RepositoryActor extends UntypedActor {
         try {
             soapWrapper = new SOAPWrapper(messageBuffer);
             OrchestrateProvideAndRegisterRequest msg = new OrchestrateProvideAndRegisterRequest(
-                    originalRequest.getRequestHandler(), getSelf(), soapWrapper.getSoapBody()
+                    originalRequest.getRequestHandler(), getSelf(), soapWrapper.getSoapBody(), xForwardedFor
             );
             pnrOrchestrator.tell(msg, getSelf());
         } catch (SOAPWrapper.SOAPParseException ex) {
@@ -200,6 +201,7 @@ public class RepositoryActor extends UntypedActor {
     public void onReceive(Object msg) throws Exception {
         if (msg instanceof MediatorHTTPRequest) {
             originalRequest = (MediatorHTTPRequest) msg;
+            xForwardedFor = ((MediatorHTTPRequest)msg).getHeaders().get("X-Forwarded-For");
             readMessage();
         } else if (msg instanceof XDSbMimeProcessorActor.XDSbMimeProcessorResponse) {
             processMtomProcessorResponse((XDSbMimeProcessorActor.XDSbMimeProcessorResponse) msg);

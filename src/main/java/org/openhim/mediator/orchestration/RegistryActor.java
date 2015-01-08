@@ -28,7 +28,9 @@ public class RegistryActor extends UntypedActor {
 
     private ActorRef requestHandler;
     private ActorRef respondTo;
-    private String message;
+    private String xForwardedFor;
+    private String messageBuffer;
+    private Identifier patientIdBuffer;
 
 
     public RegistryActor(MediatorConfig config) {
@@ -37,28 +39,34 @@ public class RegistryActor extends UntypedActor {
 
 
     private void parseMessage(MediatorHTTPRequest request) {
+        requestHandler = request.getRequestHandler();
+        respondTo = request.getRespondTo();
+        xForwardedFor = request.getHeaders().get("X-Forwarded-For");
+
         //get request body
-        message = request.getBody();
+        messageBuffer = request.getBody();
 
         //parse message...
         ActorSelection parseActor = getContext().actorSelection("/user/" + config.getName() + "/parse-registry-stored-query");
-        parseActor.tell(new SimpleMediatorRequest<String>(request.getRequestHandler(), getSelf(), message), getSelf());
+        parseActor.tell(new SimpleMediatorRequest<String>(request.getRequestHandler(), getSelf(), messageBuffer), getSelf());
     }
 
-    private void lookupEnterpriseIdentifier(Identifier patientID) {
+    private void lookupEnterpriseIdentifier() {
         ActorRef resolvePatientIDActor = getContext().actorOf(Props.create(PIXRequestActor.class, config), "pix-denormalization");
         String enterpriseIdentifierAuthority = config.getProperties().getProperty("pix.requestedAssigningAuthority");
         String enterpriseIdentifierAuthorityId = config.getProperties().getProperty("pix.requestedAssigningAuthorityId");
         AssigningAuthority authority = new AssigningAuthority(enterpriseIdentifierAuthority, enterpriseIdentifierAuthorityId);
-        ResolvePatientIdentifier msg = new ResolvePatientIdentifier(requestHandler, getSelf(), patientID, authority);
+        ResolvePatientIdentifier msg = new ResolvePatientIdentifier(requestHandler, getSelf(), patientIdBuffer, authority);
         resolvePatientIDActor.tell(msg, getSelf());
     }
 
     private void enrichEnterpriseIdentifier(ResolvePatientIdentifierResponse msg) {
-        if (msg.getIdentifier()!=null) {
+        patientIdBuffer = msg.getIdentifier();
+
+        if (patientIdBuffer !=null) {
             log.info("Resolved patient enterprise identifier. Enriching message...");
             ActorSelection enrichActor = getContext().actorSelection("/user/" + config.getName() + "/enrich-registry-stored-query");
-            EnrichRegistryStoredQuery enrichMsg = new EnrichRegistryStoredQuery(requestHandler, getSelf(), message, msg.getIdentifier());
+            EnrichRegistryStoredQuery enrichMsg = new EnrichRegistryStoredQuery(requestHandler, getSelf(), messageBuffer, patientIdBuffer);
             enrichActor.tell(enrichMsg, getSelf());
         } else {
             log.info("Could not resolve patient identifier");
@@ -71,12 +79,14 @@ public class RegistryActor extends UntypedActor {
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/soap+xml");
 
+        messageBuffer = msg.getEnrichedMessage();
+
         MediatorHTTPRequest request = new MediatorHTTPRequest(
                 requestHandler, getSelf(), "XDS.b Registry", "POST", "http",
                 config.getProperties().getProperty("xds.registry.host"),
                 Integer.parseInt(config.getProperties().getProperty("xds.registry.port")),
                 config.getProperties().getProperty("xds.registry.path"),
-                msg.getEnrichedMessage(),
+                messageBuffer,
                 headers,
                 Collections.<String, String>emptyMap()
         );
@@ -89,24 +99,48 @@ public class RegistryActor extends UntypedActor {
         respondTo.tell(response.toFinishRequest(), getSelf());
     }
 
+    private void sendAuditMessage(ATNAAudit.TYPE type) {
+        try {
+            ATNAAudit audit = new ATNAAudit(type);
+            audit.setMessage(messageBuffer);
+
+            audit.setParticipantIdentifiers(Collections.singletonList(patientIdBuffer));
+            audit.setUniqueId("NotParsed");
+            //TODO failed outcome
+            audit.setOutcome(true);
+            audit.setSourceIP(xForwardedFor);
+
+            getContext().actorSelection("/user/" + config.getName() + "/atna-auditing").tell(audit, getSelf());
+        } catch (Exception ex) {
+            //quiet you!
+        }
+    }
+
     @Override
     public void onReceive(Object msg) throws Exception {
-        if (msg instanceof MediatorHTTPRequest) {
+        if (msg instanceof MediatorHTTPRequest) { //parse request
             log.info("Parsing registry stored query request...");
-            requestHandler = ((MediatorHTTPRequest) msg).getRequestHandler();
-            respondTo = ((MediatorHTTPRequest) msg).getRespondTo();
             parseMessage((MediatorHTTPRequest) msg);
-        } else if (msg instanceof ParsedRegistryStoredQuery) {
+
+        } else if (msg instanceof ParsedRegistryStoredQuery) { //resolve patient id
             log.info("Parsed contents. Resolving patient enterprise identifier...");
-            lookupEnterpriseIdentifier(((ParsedRegistryStoredQuery) msg).getPatientId());
-        } else if (msg instanceof ResolvePatientIdentifierResponse) {
+            patientIdBuffer = ((ParsedRegistryStoredQuery) msg).getPatientId();
+            lookupEnterpriseIdentifier();
+
+            sendAuditMessage(ATNAAudit.TYPE.REGISTRY_QUERY_RECEIVED); //audit
+
+        } else if (msg instanceof ResolvePatientIdentifierResponse) { //enrich message
             enrichEnterpriseIdentifier((ResolvePatientIdentifierResponse) msg);
-        } else if (msg instanceof EnrichRegistryStoredQueryResponse) {
+
+        } else if (msg instanceof EnrichRegistryStoredQueryResponse) { //forward to registry
             log.info("Sending enriched request to XDS.b Registry");
             forwardEnrichedMessage((EnrichRegistryStoredQueryResponse) msg);
-        } else if (msg instanceof MediatorHTTPResponse) {
+
+        } else if (msg instanceof MediatorHTTPResponse) { //respond
             log.info("Received response from XDS.b Registry");
             finalizeResponse((MediatorHTTPResponse) msg);
+            sendAuditMessage(ATNAAudit.TYPE.REGISTRY_QUERY_RESPONSE); //audit
+
         } else {
             unhandled(msg);
         }

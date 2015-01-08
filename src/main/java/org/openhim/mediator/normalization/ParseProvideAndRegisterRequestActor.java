@@ -18,7 +18,7 @@ import javax.xml.bind.Unmarshaller;
  * <br/><br/>
  * Messages supported:
  * <ul>
- *     <li>SimpleMediatorRequest<String> - responds with SimpleMediatorResponse<></li>
+ *     <li>SimpleMediatorRequest<String> - responds with SimpleMediatorResponse<ProvideAndRegisterDocumentSetRequestType></li>
  * </ul>
  */
 public class ParseProvideAndRegisterRequestActor extends UntypedActor {

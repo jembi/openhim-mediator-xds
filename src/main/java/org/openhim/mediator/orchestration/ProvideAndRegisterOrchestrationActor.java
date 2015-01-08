@@ -345,6 +345,21 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         return false;
     }
 
+    private boolean areAllIdentifiersResolved() {
+        return areAllIdentifiersResolvedForList(enterprisePatientIds) &&
+                areAllIdentifiersResolvedForList(enterpriseHealthcareWorkerIds) &&
+                areAllIdentifiersResolvedForList(enterpriseFacilityIds);
+    }
+
+    private boolean areAllIdentifiersResolvedForList(List<IdentifierMapping> lst) {
+        for (IdentifierMapping mapping : lst) {
+            if (!mapping.resolved) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private void sendAuditMessage(ATNAAudit.TYPE type) {
         try {
             ATNAAudit audit = new ATNAAudit(type);
@@ -367,21 +382,6 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         } catch (Exception ex) {
             //quiet you!
         }
-    }
-
-    private boolean areAllIdentifiersResolved() {
-        return areAllIdentifiersResolvedForList(enterprisePatientIds) &&
-                areAllIdentifiersResolvedForList(enterpriseHealthcareWorkerIds) &&
-                areAllIdentifiersResolvedForList(enterpriseFacilityIds);
-    }
-
-    private boolean areAllIdentifiersResolvedForList(List<IdentifierMapping> lst) {
-        for (IdentifierMapping mapping : lst) {
-            if (!mapping.resolved) {
-                return false;
-            }
-        }
-        return true;
     }
 
 

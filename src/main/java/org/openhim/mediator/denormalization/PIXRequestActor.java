@@ -132,6 +132,10 @@ public class PIXRequestActor extends UntypedActor {
     @Override
     public void onReceive(Object msg) throws Exception {
         if (msg instanceof ResolvePatientIdentifier) {
+            log.info("Received request to resolve patient identifier in the '" + ((ResolvePatientIdentifier) msg).getTargetAssigningAuthority() + "' domain");
+            if (log.isDebugEnabled()) {
+                log.debug("Patient ID: " + ((ResolvePatientIdentifier) msg).getIdentifier());
+            }
             sendPIXRequest((ResolvePatientIdentifier) msg);
         } else if (msg instanceof MediatorSocketResponse) {
             processResponse((MediatorSocketResponse) msg);

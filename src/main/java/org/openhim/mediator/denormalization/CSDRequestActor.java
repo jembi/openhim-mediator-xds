@@ -50,42 +50,60 @@ public class CSDRequestActor extends UntypedActor {
     }
 
     private void sendCSDRequest(String request, BaseResolveIdentifier originalRequest) {
+        ActorSelection httpConnector = getContext().actorSelection("/user/" + config.getName() + "/http-connector");
+
         String correlationId = UUID.randomUUID().toString();
         originalRequests.put(correlationId, originalRequest);
 
-        ActorSelection httpConnector = getContext().actorSelection("/user/" + config.getName() + "/http-connector");
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/xml");
+
         MediatorHTTPRequest httpRequest = new MediatorHTTPRequest(
-                originalRequest.getRequestHandler(), getSelf(), "CSD", "POST", "http",
+                originalRequest.getRequestHandler(),
+                getSelf(),
+                determineOrchestration(originalRequest),
+                "POST",
+                "http",
                 config.getProperties().getProperty("ilr.host"),
                 Integer.parseInt(config.getProperties().getProperty("ilr.port")),
                 config.getProperties().getProperty("ilr.csr.path"),
-                request, headers, null, correlationId
+                request,
+                headers,
+                null,
+                correlationId
         );
 
         httpConnector.tell(httpRequest, getSelf());
     }
 
+    private String determineOrchestration(BaseResolveIdentifier originalRequest) {
+        if (originalRequest instanceof ResolveHealthcareWorkerIdentifier) {
+            return "CSD Resolve Healthcare Worker Identifier";
+        } else if (originalRequest instanceof ResolveFacilityIdentifier) {
+            return "CSD Resolve Facility Identifier";
+        }
+        return "CSD";
+    }
+
     private void sendResolveHealthcareWorkerIdentifierRequest(ResolveHealthcareWorkerIdentifier msg) {
-        String csdTemplate = "<csd:careServicesRequest xmlns='urn:ihe:iti:csd:2013' xmlns:csd='urn:ihe:iti:csd:2013'>"
-                + "	<function urn='urn:ihe:iti:csd:2014:stored-function:provider-search'>"
-                + "		<requestParams>"
-                + "			<otherID code='" + msg.getIdentifier() + "' assigningAuthorityName='" + msg.getIdentifier().getAssigningAuthority().getAssigningAuthorityId() + "'/>"
-                + "		</requestParams>"
-                + "	</function>"
+        String csdTemplate = "<csd:careServicesRequest xmlns='urn:ihe:iti:csd:2013' xmlns:csd='urn:ihe:iti:csd:2013'>\n"
+                + "	<function urn='urn:ihe:iti:csd:2014:stored-function:provider-search'>\n"
+                + "		<requestParams>\n"
+                + "			<otherID code='" + msg.getIdentifier() + "' assigningAuthorityName='" + msg.getIdentifier().getAssigningAuthority().getAssigningAuthorityId() + "'/>\n"
+                + "		</requestParams>\n"
+                + "	</function>\n"
                 + "</csd:careServicesRequest>";
 
         sendCSDRequest(csdTemplate, msg);
     }
 
     private void sendResolveFacilityIdentifierRequest(ResolveFacilityIdentifier msg) {
-        String csdTemplate = "<csd:careServicesRequest xmlns='urn:ihe:iti:csd:2013' xmlns:csd='urn:ihe:iti:csd:2013'>"
-                + "	<function urn='urn:ihe:iti:csd:2014:stored-function:facility-search'>"
-                + "		<requestParams>"
-                + "			<otherID code='" + msg.getIdentifier() + "' assigningAuthorityName='" + msg.getIdentifier().getAssigningAuthority().getAssigningAuthorityId() + "'/>"
-                + "		</requestParams>"
-                + "	</function>"
+        String csdTemplate = "<csd:careServicesRequest xmlns='urn:ihe:iti:csd:2013' xmlns:csd='urn:ihe:iti:csd:2013'>\n"
+                + "	<function urn='urn:ihe:iti:csd:2014:stored-function:facility-search'>\n"
+                + "		<requestParams>\n"
+                + "			<otherID code='" + msg.getIdentifier() + "' assigningAuthorityName='" + msg.getIdentifier().getAssigningAuthority().getAssigningAuthorityId() + "'/>\n"
+                + "		</requestParams>\n"
+                + "	</function>\n"
                 + "</csd:careServicesRequest>";
 
         sendCSDRequest(csdTemplate, msg);
@@ -157,9 +175,21 @@ public class CSDRequestActor extends UntypedActor {
     @Override
     public void onReceive(Object msg) throws Exception {
         if (msg instanceof ResolveHealthcareWorkerIdentifier) {
+            log.info("Received request to resolve healthcare worker id in the '" + ((ResolveHealthcareWorkerIdentifier) msg).getTargetAssigningAuthority() + "' domain");
+            if (log.isDebugEnabled()) {
+                log.debug("Healthcare Worker ID: " + ((ResolveHealthcareWorkerIdentifier) msg).getIdentifier());
+            }
+
             sendResolveHealthcareWorkerIdentifierRequest((ResolveHealthcareWorkerIdentifier) msg);
+
         } else if (msg instanceof ResolveFacilityIdentifier) {
+            log.info("Received request to resolve facility id in the '" + ((ResolveFacilityIdentifier) msg).getTargetAssigningAuthority() + "' domain");
+            if (log.isDebugEnabled()) {
+                log.debug("Facility ID: " + ((ResolveFacilityIdentifier) msg).getIdentifier());
+            }
+
             sendResolveFacilityIdentifierRequest((ResolveFacilityIdentifier) msg);
+
         } else if (msg instanceof MediatorHTTPResponse) {
             processHTTPResponse((MediatorHTTPResponse) msg);
         } else {

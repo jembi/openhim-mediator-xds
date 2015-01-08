@@ -49,4 +49,12 @@ public class AssigningAuthority {
         result = 31 * result + (assigningAuthorityId != null ? assigningAuthorityId.hashCode() : 0);
         return result;
     }
+
+    @Override
+    public String toString() {
+        if (assigningAuthority!=null && !assigningAuthority.isEmpty()) {
+            return assigningAuthority + " (" + assigningAuthorityId + ")";
+        }
+        return assigningAuthorityId;
+    }
 }

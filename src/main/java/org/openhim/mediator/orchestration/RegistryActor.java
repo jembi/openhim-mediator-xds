@@ -46,7 +46,7 @@ public class RegistryActor extends UntypedActor {
     }
 
     private void lookupEnterpriseIdentifier(Identifier patientID) {
-        ActorRef resolvePatientIDActor = getContext().actorOf(Props.create(PIXRequestActor.class, config));
+        ActorRef resolvePatientIDActor = getContext().actorOf(Props.create(PIXRequestActor.class, config), "pix-denormalization");
         String enterpriseIdentifierAuthority = config.getProperties().getProperty("pix.requestedAssigningAuthority");
         String enterpriseIdentifierAuthorityId = config.getProperties().getProperty("pix.requestedAssigningAuthorityId");
         AssigningAuthority authority = new AssigningAuthority(enterpriseIdentifierAuthority, enterpriseIdentifierAuthorityId);
@@ -72,7 +72,7 @@ public class RegistryActor extends UntypedActor {
         headers.put("Content-Type", "application/soap+xml");
 
         MediatorHTTPRequest request = new MediatorHTTPRequest(
-                requestHandler, getSelf(), "xds-b-registry", "POST", "http",
+                requestHandler, getSelf(), "XDS.b Registry", "POST", "http",
                 config.getProperties().getProperty("xds.registry.host"),
                 Integer.parseInt(config.getProperties().getProperty("xds.registry.port")),
                 config.getProperties().getProperty("xds.registry.path"),

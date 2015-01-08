@@ -125,7 +125,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
     private void parseRequest(OrchestrateProvideAndRegisterRequest msg) {
         log.info("Parsing Xds.b Provide and Register request");
         request = msg.getRequestObject();
-        ActorRef parseHandler = getContext().actorOf(Props.create(ParseProvideAndRegisterRequestActor.class));
+        ActorRef parseHandler = getContext().actorOf(Props.create(ParseProvideAndRegisterRequestActor.class), "xds-pnr-document-normalization");
         parseHandler.tell(new SimpleMediatorRequest<>(msg.getRequestHandler(), getSelf(), request), getSelf());
     }
 

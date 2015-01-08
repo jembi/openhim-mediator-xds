@@ -9,7 +9,7 @@ import akka.event.LoggingAdapter;
 import org.apache.http.HttpStatus;
 import org.openhim.mediator.datatypes.AssigningAuthority;
 import org.openhim.mediator.datatypes.Identifier;
-import org.openhim.mediator.denormalization.ResolveEnterpriseIdentifierActor;
+import org.openhim.mediator.denormalization.PIXRequestActor;
 import org.openhim.mediator.engine.MediatorConfig;
 import org.openhim.mediator.engine.messages.FinishRequest;
 import org.openhim.mediator.engine.messages.MediatorHTTPRequest;
@@ -46,7 +46,7 @@ public class RegistryActor extends UntypedActor {
     }
 
     private void lookupEnterpriseIdentifier(Identifier patientID) {
-        ActorRef resolvePatientIDActor = getContext().actorOf(Props.create(ResolveEnterpriseIdentifierActor.class, config));
+        ActorRef resolvePatientIDActor = getContext().actorOf(Props.create(PIXRequestActor.class, config));
         String enterpriseIdentifierAuthority = config.getProperties().getProperty("pix.requestedAssigningAuthority");
         String enterpriseIdentifierAuthorityId = config.getProperties().getProperty("pix.requestedAssigningAuthorityId");
         AssigningAuthority authority = new AssigningAuthority(enterpriseIdentifierAuthority, enterpriseIdentifierAuthorityId);

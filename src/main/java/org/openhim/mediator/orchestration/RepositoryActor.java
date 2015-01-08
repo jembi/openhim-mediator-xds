@@ -8,7 +8,7 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
-import org.openhim.mediator.denormalization.ResolveEnterpriseIdentifierActor;
+import org.openhim.mediator.denormalization.PIXRequestActor;
 import org.openhim.mediator.engine.MediatorConfig;
 import org.openhim.mediator.engine.messages.ExceptError;
 import org.openhim.mediator.engine.messages.FinishRequest;
@@ -106,7 +106,7 @@ public class RepositoryActor extends UntypedActor {
     }
 
     private void processProviderAndRegisterAction() {
-        ActorRef resolvePatientIDHandler = getContext().actorOf(Props.create(ResolveEnterpriseIdentifierActor.class, config));
+        ActorRef resolvePatientIDHandler = getContext().actorOf(Props.create(PIXRequestActor.class, config));
         ActorRef resolveProviderIDHandler = null;
         ActorRef resolveFacilityIDHandler = null;
         ActorRef pnrOrchestrator = getContext().actorOf(

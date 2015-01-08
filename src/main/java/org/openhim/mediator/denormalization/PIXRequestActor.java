@@ -26,8 +26,7 @@ import java.util.UUID;
 /**
  * Messages supported:
  * <ul>
- * <li>ResolvePatientIdentifierMessage</li>
- * <li>MediatorHTTPResponse</li>
+ * <li>ResolvePatientIdentifier - responds with ResolvePatientIdentifierResponse</li>
  * </ul>
  */
 public class PIXRequestActor extends UntypedActor {

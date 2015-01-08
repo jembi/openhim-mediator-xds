@@ -14,7 +14,6 @@ import org.dcm4chee.xds2.infoset.util.InfosetUtil;
 import org.openhim.mediator.Util;
 import org.openhim.mediator.datatypes.AssigningAuthority;
 import org.openhim.mediator.datatypes.Identifier;
-import org.openhim.mediator.denormalization.ResolveEnterpriseIdentifierActor;
 import org.openhim.mediator.engine.MediatorConfig;
 import org.openhim.mediator.engine.messages.ExceptError;
 import org.openhim.mediator.engine.messages.FinishRequest;
@@ -122,12 +121,6 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         this.resolveFacilityIdHandler = resolveFacilityIdHandler;
     }
 
-    public ProvideAndRegisterOrchestrationActor(MediatorConfig config) {
-        this.config = config;
-        this.resolvePatientIdHandler = getContext().actorOf(Props.create(ResolveEnterpriseIdentifierActor.class, config));
-        this.resolveHealthcareWorkerIdHandler = null;
-        this.resolveFacilityIdHandler = null;
-    }
 
     private void parseRequest(OrchestrateProvideAndRegisterRequest msg) {
         log.info("Parsing Xds.b Provide and Register request");

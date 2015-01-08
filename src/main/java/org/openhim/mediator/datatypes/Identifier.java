@@ -17,7 +17,7 @@ public class Identifier {
             String _assigningAuthority = CX.substring(CX.lastIndexOf('^') + 1, CX.indexOf('&'));
             String _assigningAuthorityId = CX.substring(CX.indexOf('&') + 1, CX.lastIndexOf('&'));
             assigningAuthority = new AssigningAuthority(_assigningAuthority, _assigningAuthorityId);
-        } catch (ArrayIndexOutOfBoundsException ex) {
+        } catch (ArrayIndexOutOfBoundsException | StringIndexOutOfBoundsException ex) {
             throw new CXParseException("Failed to parse CX string: " + CX, ex);
         }
     }

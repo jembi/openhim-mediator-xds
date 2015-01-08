@@ -8,6 +8,7 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
+import org.openhim.mediator.denormalization.CSDRequestActor;
 import org.openhim.mediator.denormalization.PIXRequestActor;
 import org.openhim.mediator.engine.MediatorConfig;
 import org.openhim.mediator.engine.messages.ExceptError;
@@ -107,12 +108,12 @@ public class RepositoryActor extends UntypedActor {
 
     private void processProviderAndRegisterAction() {
         ActorRef resolvePatientIDHandler = getContext().actorOf(Props.create(PIXRequestActor.class, config));
-        ActorRef resolveProviderIDHandler = null;
-        ActorRef resolveFacilityIDHandler = null;
+        ActorRef resolveHealthcareWorkerIDHandler = getContext().actorOf(Props.create(CSDRequestActor.class, config));
+        ActorRef resolveFacilityIDHandler = resolveHealthcareWorkerIDHandler;
         ActorRef pnrOrchestrator = getContext().actorOf(
                 Props.create(
                         ProvideAndRegisterOrchestrationActor.class, config,
-                        resolvePatientIDHandler, resolveProviderIDHandler, resolveFacilityIDHandler
+                        resolvePatientIDHandler, resolveHealthcareWorkerIDHandler, resolveFacilityIDHandler
                 )
         );
 

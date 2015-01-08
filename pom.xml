@@ -3,7 +3,7 @@
 <modelVersion>4.0.0</modelVersion>
 <groupId>org.openhim</groupId>
 <artifactId>mediator-xds</artifactId>
-<version>0.2.0</version>
+<version>0.3.0</version>
 <properties>
   <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 </properties>
@@ -106,12 +106,6 @@
     <groupId>com.typesafe.akka</groupId>
     <artifactId>akka-testkit_2.10</artifactId>
     <version>2.3.7</version>
-    <scope>test</scope>
-  </dependency>
-  <dependency>
-    <groupId>com.github.tomakehurst</groupId>
-    <artifactId>wiremock</artifactId>
-    <version>1.52</version>
     <scope>test</scope>
   </dependency>
 </dependencies>

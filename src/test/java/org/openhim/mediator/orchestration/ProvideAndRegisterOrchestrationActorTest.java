@@ -54,7 +54,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
     @Before
     public void setUp() throws Exception {
         testConfig = new MediatorConfig();
-        testConfig.setProperties("mediator.properties");
+        testConfig.setProperties("mediator-unit-test.properties");
     }
 
     private void setupResolvePatientIDMock() {

@@ -122,7 +122,7 @@ public class PIXRequestActor extends UntypedActor {
     private void processResponse(MediatorSocketResponse msg) {
         try {
             Identifier result = parseResponse(msg.getBody());
-            ResolvePatientIdentifier originalRequest = originalRequests.get(msg.getOriginalRequest().getCorrelationId());
+            ResolvePatientIdentifier originalRequest = originalRequests.remove(msg.getOriginalRequest().getCorrelationId());
             originalRequest.getRespondTo().tell(new ResolvePatientIdentifierResponse(originalRequest, result), getSelf());
         } catch (HL7Exception ex) {
             msg.getOriginalRequest().getRequestHandler().tell(new ExceptError(ex), getSelf());

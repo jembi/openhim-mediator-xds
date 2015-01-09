@@ -90,12 +90,18 @@ public class PIXRequestActor extends UntypedActor {
             String pixQuery = constructPIXQuery(correlationId, msg);
             originalRequests.put(correlationId, msg);
 
+            boolean secure = config.getProperty("ihe.secure").equalsIgnoreCase("true");
+            int port;
+            if (secure) {
+                port = Integer.parseInt(config.getProperty("pix.manager.securePort"));
+            } else {
+                port = Integer.parseInt(config.getProperty("pix.manager.port"));
+            }
+
             ActorSelection connector = getContext().actorSelection(config.userPathFor("mllp-connector"));
             MediatorSocketRequest request = new MediatorSocketRequest(
                     msg.getRequestHandler(), getSelf(), "PIX Resolve Enterprise Identifier", correlationId,
-                    config.getProperty("pix.manager.host"),
-                    Integer.parseInt(config.getProperty("pix.manager.port")),
-                    pixQuery
+                    config.getProperty("pix.manager.host"), port, pixQuery, secure
             );
             connector.tell(request, getSelf());
         } catch (HL7Exception ex) {

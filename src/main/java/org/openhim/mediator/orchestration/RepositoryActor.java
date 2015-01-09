@@ -183,11 +183,19 @@ public class RepositoryActor extends UntypedActor {
         headers.remove("Content-Length");
         headers.remove("content-length");
 
+        String scheme;
+        Integer port;
+        if (config.getProperty("ihe.secure").equals("true")) {
+            scheme = "https";
+            port = Integer.parseInt(config.getProperty("xds.repository.securePort"));
+        } else {
+            scheme = "http";
+            port = Integer.parseInt(config.getProperty("xds.repository.port"));
+        }
+
         MediatorHTTPRequest request = new MediatorHTTPRequest(
-                originalRequest.getRespondTo(), getSelf(), "XDS.b Repository", "POST", "http",
-                config.getProperty("xds.repository.host"),
-                Integer.parseInt(config.getProperty("xds.repository.port")),
-                config.getProperty("xds.repository.path"),
+                originalRequest.getRespondTo(), getSelf(), "XDS.b Repository", "POST", scheme,
+                config.getProperty("xds.repository.host"), port, config.getProperty("xds.repository.path"),
                 messageBuffer, headers, null
         );
         httpConnector.tell(request, getSelf());

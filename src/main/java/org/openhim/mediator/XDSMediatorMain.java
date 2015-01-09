@@ -1,11 +1,14 @@
 package org.openhim.mediator;
 
+import akka.actor.ActorRef;
+import akka.actor.ActorSelection;
 import akka.actor.ActorSystem;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import org.openhim.mediator.denormalization.ATNAAuditingActor;
 import org.openhim.mediator.denormalization.EnrichRegistryStoredQueryActor;
 import org.openhim.mediator.engine.*;
+import org.openhim.mediator.engine.messages.SetupHTTPSCertificate;
 import org.openhim.mediator.normalization.ParseRegistryStoredQueryActor;
 import org.openhim.mediator.orchestration.RegistryActor;
 import org.openhim.mediator.orchestration.RepositoryActor;
@@ -57,6 +60,24 @@ public class XDSMediatorMain {
         return config;
     }
 
+    private static void loadSSLConfig(ActorSystem system, MediatorConfig config) {
+        System.setProperty("javax.net.ssl.keyStore", config.getProperty("ihe.keystore"));
+        System.setProperty("javax.net.ssl.keyStorePassword", config.getProperty("ihe.keypassword"));
+        System.setProperty("javax.net.ssl.trustStore", config.getProperty("ihe.keystore"));
+        System.setProperty("javax.net.ssl.trustStorePassword", config.getProperty("ihe.storepassword"));
+
+        ActorSelection httpConnector = system.actorSelection(config.userPathFor("http-connector"));
+        httpConnector.tell(
+                new SetupHTTPSCertificate(
+                        config.getProperty("ihe.keystore"),
+                        config.getProperty("ihe.keypassword"),
+                        config.getProperty("ihe.keystore"),
+                        true
+                ),
+                ActorRef.noSender()
+        );
+    }
+
     public static void main(String... args) throws Exception {
 
         //setup actor system
@@ -68,6 +89,10 @@ public class XDSMediatorMain {
         log.info("Initializing mediator server...");
         MediatorConfig config = loadConfig();
         final MediatorServer server = new MediatorServer(system, config);
+
+        if (config.getProperty("ihe.secure").equalsIgnoreCase("true")) {
+            loadSSLConfig(system, config);
+        }
 
         //setup shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread() {

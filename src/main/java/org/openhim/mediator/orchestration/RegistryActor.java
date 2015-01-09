@@ -81,14 +81,20 @@ public class RegistryActor extends UntypedActor {
 
         messageBuffer = msg.getEnrichedMessage();
 
+        String scheme;
+        Integer port;
+        if (config.getProperty("ihe.secure").equals("true")) {
+            scheme = "https";
+            port = Integer.parseInt(config.getProperty("xds.registry.securePort"));
+        } else {
+            scheme = "http";
+            port = Integer.parseInt(config.getProperty("xds.registry.port"));
+        }
+
         MediatorHTTPRequest request = new MediatorHTTPRequest(
-                requestHandler, getSelf(), "XDS.b Registry", "POST", "http",
-                config.getProperty("xds.registry.host"),
-                Integer.parseInt(config.getProperty("xds.registry.port")),
-                config.getProperty("xds.registry.path"),
-                messageBuffer,
-                headers,
-                Collections.<String, String>emptyMap()
+                requestHandler, getSelf(), "XDS.b Registry", "POST", scheme,
+                config.getProperty("xds.registry.host"), port, config.getProperty("xds.registry.path"),
+                messageBuffer, headers, Collections.<String, String>emptyMap()
         );
 
         ActorSelection httpConnector = getContext().actorSelection(config.userPathFor("http-connector"));

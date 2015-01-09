@@ -50,7 +50,7 @@ public class CSDRequestActor extends UntypedActor {
     }
 
     private void sendCSDRequest(String request, BaseResolveIdentifier originalRequest) {
-        ActorSelection httpConnector = getContext().actorSelection("/user/" + config.getName() + "/http-connector");
+        ActorSelection httpConnector = getContext().actorSelection(config.userPathFor("http-connector"));
 
         String correlationId = UUID.randomUUID().toString();
         originalRequests.put(correlationId, originalRequest);
@@ -64,9 +64,9 @@ public class CSDRequestActor extends UntypedActor {
                 determineOrchestration(originalRequest),
                 "POST",
                 "http",
-                config.getProperties().getProperty("ilr.host"),
-                Integer.parseInt(config.getProperties().getProperty("ilr.port")),
-                config.getProperties().getProperty("ilr.csr.path"),
+                config.getProperty("ilr.host"),
+                Integer.parseInt(config.getProperty("ilr.port")),
+                config.getProperty("ilr.csr.path"),
                 request,
                 headers,
                 null,

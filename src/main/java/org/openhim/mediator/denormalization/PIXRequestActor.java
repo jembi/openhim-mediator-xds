@@ -50,10 +50,10 @@ public class PIXRequestActor extends UntypedActor {
         MSH msh = (MSH) t.getSegment("MSH");
         t.set("MSH-1", "|");
         t.set("MSH-2", "^~\\&");
-        t.set("MSH-3-1", config.getProperties().getProperty("pix.sendingApplication"));
-        t.set("MSH-4-1", config.getProperties().getProperty("pix.sendingFacility"));
-        t.set("MSH-5-1", config.getProperties().getProperty("pix.receivingApplication"));
-        t.set("MSH-6-1", config.getProperties().getProperty("pix.receivingFacility"));
+        t.set("MSH-3-1", config.getProperty("pix.sendingApplication"));
+        t.set("MSH-4-1", config.getProperty("pix.sendingFacility"));
+        t.set("MSH-5-1", config.getProperty("pix.receivingApplication"));
+        t.set("MSH-6-1", config.getProperty("pix.receivingFacility"));
         msh.getDateTimeOfMessage().getTime().setValue(dateFormat.format(new Date()));
         t.set("MSH-9-1", "QBP");
         t.set("MSH-9-2", "Q23");
@@ -90,11 +90,11 @@ public class PIXRequestActor extends UntypedActor {
             String pixQuery = constructPIXQuery(correlationId, msg);
             originalRequests.put(correlationId, msg);
 
-            ActorSelection connector = getContext().actorSelection("/user/" + config.getName() + "/mllp-connector");
+            ActorSelection connector = getContext().actorSelection(config.userPathFor("mllp-connector"));
             MediatorSocketRequest request = new MediatorSocketRequest(
                     msg.getRequestHandler(), getSelf(), "PIX Resolve Enterprise Identifier", correlationId,
-                    config.getProperties().getProperty("pix.manager.host"),
-                    Integer.parseInt(config.getProperties().getProperty("pix.manager.port")),
+                    config.getProperty("pix.manager.host"),
+                    Integer.parseInt(config.getProperty("pix.manager.port")),
                     pixQuery
             );
             connector.tell(request, getSelf());
@@ -142,7 +142,7 @@ public class PIXRequestActor extends UntypedActor {
             audit.setParticipantIdentifiers(Collections.singletonList(resolvedId));
             audit.setUniqueId(controlIds.remove(msg.getOriginalRequest().getCorrelationId()));
 
-            getContext().actorSelection("/user/" + config.getName() + "/atna-auditing").tell(audit, getSelf());
+            getContext().actorSelection(config.userPathFor("atna-auditing")).tell(audit, getSelf());
         } catch (Exception ex) {
             //quiet you!
         }

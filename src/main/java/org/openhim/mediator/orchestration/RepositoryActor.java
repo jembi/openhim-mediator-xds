@@ -177,7 +177,7 @@ public class RepositoryActor extends UntypedActor {
     }
 
     private void forwardRequestToRepository() {
-        ActorSelection httpConnector = getContext().actorSelection("/user/" + config.getName() + "/http-connector");
+        ActorSelection httpConnector = getContext().actorSelection(config.userPathFor("http-connector"));
 
         Map<String, String> headers = new HashMap<>(originalRequest.getHeaders());
         headers.remove("Content-Length");
@@ -185,9 +185,9 @@ public class RepositoryActor extends UntypedActor {
 
         MediatorHTTPRequest request = new MediatorHTTPRequest(
                 originalRequest.getRespondTo(), getSelf(), "XDS.b Repository", "POST", "http",
-                config.getProperties().getProperty("xds.repository.host"),
-                Integer.parseInt(config.getProperties().getProperty("xds.repository.port")),
-                config.getProperties().getProperty("xds.repository.path"),
+                config.getProperty("xds.repository.host"),
+                Integer.parseInt(config.getProperty("xds.repository.port")),
+                config.getProperty("xds.repository.path"),
                 messageBuffer, headers, null
         );
         httpConnector.tell(request, getSelf());

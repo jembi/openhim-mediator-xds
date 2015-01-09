@@ -47,14 +47,14 @@ public class RegistryActor extends UntypedActor {
         messageBuffer = request.getBody();
 
         //parse message...
-        ActorSelection parseActor = getContext().actorSelection("/user/" + config.getName() + "/parse-registry-stored-query");
-        parseActor.tell(new SimpleMediatorRequest<String>(request.getRequestHandler(), getSelf(), messageBuffer), getSelf());
+        ActorSelection parseActor = getContext().actorSelection(config.userPathFor("parse-registry-stored-query"));
+        parseActor.tell(new SimpleMediatorRequest<>(request.getRequestHandler(), getSelf(), messageBuffer), getSelf());
     }
 
     private void lookupEnterpriseIdentifier() {
         ActorRef resolvePatientIDActor = getContext().actorOf(Props.create(PIXRequestActor.class, config), "pix-denormalization");
-        String enterpriseIdentifierAuthority = config.getProperties().getProperty("pix.requestedAssigningAuthority");
-        String enterpriseIdentifierAuthorityId = config.getProperties().getProperty("pix.requestedAssigningAuthorityId");
+        String enterpriseIdentifierAuthority = config.getProperty("pix.requestedAssigningAuthority");
+        String enterpriseIdentifierAuthorityId = config.getProperty("pix.requestedAssigningAuthorityId");
         AssigningAuthority authority = new AssigningAuthority(enterpriseIdentifierAuthority, enterpriseIdentifierAuthorityId);
         ResolvePatientIdentifier msg = new ResolvePatientIdentifier(requestHandler, getSelf(), patientIdBuffer, authority);
         resolvePatientIDActor.tell(msg, getSelf());
@@ -65,7 +65,7 @@ public class RegistryActor extends UntypedActor {
 
         if (patientIdBuffer !=null) {
             log.info("Resolved patient enterprise identifier. Enriching message...");
-            ActorSelection enrichActor = getContext().actorSelection("/user/" + config.getName() + "/enrich-registry-stored-query");
+            ActorSelection enrichActor = getContext().actorSelection(config.userPathFor("enrich-registry-stored-query"));
             EnrichRegistryStoredQuery enrichMsg = new EnrichRegistryStoredQuery(requestHandler, getSelf(), messageBuffer, patientIdBuffer);
             enrichActor.tell(enrichMsg, getSelf());
         } else {
@@ -83,15 +83,15 @@ public class RegistryActor extends UntypedActor {
 
         MediatorHTTPRequest request = new MediatorHTTPRequest(
                 requestHandler, getSelf(), "XDS.b Registry", "POST", "http",
-                config.getProperties().getProperty("xds.registry.host"),
-                Integer.parseInt(config.getProperties().getProperty("xds.registry.port")),
-                config.getProperties().getProperty("xds.registry.path"),
+                config.getProperty("xds.registry.host"),
+                Integer.parseInt(config.getProperty("xds.registry.port")),
+                config.getProperty("xds.registry.path"),
                 messageBuffer,
                 headers,
                 Collections.<String, String>emptyMap()
         );
 
-        ActorSelection httpConnector = getContext().actorSelection("/user/" + config.getName() + "/http-connector");
+        ActorSelection httpConnector = getContext().actorSelection(config.userPathFor("http-connector"));
         httpConnector.tell(request, getSelf());
     }
 
@@ -110,7 +110,7 @@ public class RegistryActor extends UntypedActor {
             audit.setOutcome(true);
             audit.setSourceIP(xForwardedFor);
 
-            getContext().actorSelection("/user/" + config.getName() + "/atna-auditing").tell(audit, getSelf());
+            getContext().actorSelection(config.userPathFor("atna-auditing")).tell(audit, getSelf());
         } catch (Exception ex) {
             //quiet you!
         }

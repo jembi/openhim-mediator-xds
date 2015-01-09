@@ -12,7 +12,6 @@ import org.openhim.mediator.orchestration.RepositoryActor;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Properties;
 
 public class XDSMediatorMain {
 
@@ -36,16 +35,16 @@ public class XDSMediatorMain {
 
         config.setProperties("mediator.properties");
 
-        config.setName(config.getProperties().getProperty("mediator.name"));
-        config.setServerHost(config.getProperties().getProperty("mediator.host"));
-        config.setServerPort( Integer.parseInt(config.getProperties().getProperty("mediator.port")) );
-        config.setRootTimeout(Integer.parseInt(config.getProperties().getProperty("mediator.timeout")));
+        config.setName(config.getProperty("mediator.name"));
+        config.setServerHost(config.getProperty("mediator.host"));
+        config.setServerPort( Integer.parseInt(config.getProperty("mediator.port")) );
+        config.setRootTimeout(Integer.parseInt(config.getProperty("mediator.timeout")));
 
-        config.setCoreHost(config.getProperties().getProperty("core.host"));
-        config.setCoreAPIUsername(config.getProperties().getProperty("core.api.user"));
-        config.setCoreAPIPassword(config.getProperties().getProperty("core.api.password"));
-        if (config.getProperties().getProperty("core.api.port") != null) {
-            config.setCoreAPIPort(Integer.parseInt(config.getProperties().getProperty("core.api.port")));
+        config.setCoreHost(config.getProperty("core.host"));
+        config.setCoreAPIUsername(config.getProperty("core.api.user"));
+        config.setCoreAPIPassword(config.getProperty("core.api.password"));
+        if (config.getProperty("core.api.port") != null) {
+            config.setCoreAPIPort(Integer.parseInt(config.getProperty("core.api.port")));
         }
 
         config.setRoutingTable(buildRoutingTable());

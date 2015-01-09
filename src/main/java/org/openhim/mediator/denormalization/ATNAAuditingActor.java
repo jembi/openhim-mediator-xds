@@ -50,11 +50,11 @@ public class ATNAAuditingActor extends UntypedActor {
         res.setEventIdentification(eid);
 
         res.getActiveParticipant().add( ATNAUtil.buildActiveParticipant(
-                config.getProperties().getProperty("pix.sendingFacility") + "|" + config.getProperties().getProperty("pix.sendingApplication"),
+                config.getProperty("pix.sendingFacility") + "|" + config.getProperty("pix.sendingApplication"),
                 ATNAUtil.getProcessID(), true, ATNAUtil.getHostIP(), (short)2, "DCM", "110153", "Source"));
         res.getActiveParticipant().add( ATNAUtil.buildActiveParticipant(
-                config.getProperties().getProperty("pix.receivingFacility") + "|" + config.getProperties().getProperty("pix.receivingApplication"),
-                "2100", false, config.getProperties().getProperty("pix.manager.host"), (short)1, "DCM", "110152", "Destination"));
+                config.getProperty("pix.receivingFacility") + "|" + config.getProperty("pix.receivingApplication"),
+                "2100", false, config.getProperty("pix.manager.host"), (short)1, "DCM", "110152", "Destination"));
 
         res.getAuditSourceIdentification().add(ATNAUtil.buildAuditSource("openhim"));
 
@@ -119,7 +119,7 @@ public class ATNAAuditingActor extends UntypedActor {
         eid.setEventOutcomeIndicator(audit.getOutcome() ? BigInteger.ONE : BigInteger.ZERO);
         res.setEventIdentification(eid);
 
-        String xdsRegistryHost = config.getProperties().getProperty("xds.registry.host");
+        String xdsRegistryHost = config.getProperty("xds.registry.host");
         res.getActiveParticipant().add( ATNAUtil.buildActiveParticipant(ATNAUtil.WSA_REPLYTO_ANON, ATNAUtil.getProcessID(), true, ATNAUtil.getHostIP(), (short)2, "DCM", "110153", "Source"));
         res.getActiveParticipant().add( ATNAUtil.buildActiveParticipant(buildRegistryPath(), xdsRegistryHost, false, xdsRegistryHost, (short)1, "DCM", "110152", "Destination"));
 
@@ -146,10 +146,10 @@ public class ATNAAuditingActor extends UntypedActor {
 
     private String buildRegistryPath() {
         return String.format(
-                "%s:%s/%s", config.getProperties().getProperty("xds.registry.host"),
-                ((config.getProperties().getProperty("ihe.secure").equalsIgnoreCase("true")) ?
-                        config.getProperties().getProperty("xds.registry.securePort") : config.getProperties().getProperty("xds.registry.port")),
-                config.getProperties().getProperty("xds.registry.path")
+                "%s:%s/%s", config.getProperty("xds.registry.host"),
+                ((config.getProperty("ihe.secure").equalsIgnoreCase("true")) ?
+                        config.getProperty("xds.registry.securePort") : config.getProperty("xds.registry.port")),
+                config.getProperty("xds.registry.path")
         );
     }
 
@@ -199,7 +199,7 @@ public class ATNAAuditingActor extends UntypedActor {
         eid.setEventOutcomeIndicator(audit.getOutcome() ? BigInteger.ZERO : new BigInteger("4"));
         res.setEventIdentification(eid);
 
-        String xdsRepositoryHost = config.getProperties().getProperty("xds.repository.host");
+        String xdsRepositoryHost = config.getProperty("xds.repository.host");
         res.getActiveParticipant().add( ATNAUtil.buildActiveParticipant(ATNAUtil.WSA_REPLYTO_ANON, ATNAUtil.getProcessID(), true, ATNAUtil.getHostIP(), (short)2, "DCM", "110153", "Source"));
         res.getActiveParticipant().add( ATNAUtil.buildActiveParticipant(xdsRepositoryHost, false, xdsRepositoryHost, (short)1, "DCM", "110152", "Destination"));
 
@@ -226,7 +226,7 @@ public class ATNAAuditingActor extends UntypedActor {
 
         log.info("Sending ATNA " + audit.getType() + " audit message using UDP");
 
-        ActorSelection udpConnector = getContext().actorSelection("/user/" + config.getName() + "/udp-fire-forget-connector");
+        ActorSelection udpConnector = getContext().actorSelection(config.userPathFor("udp-fire-forget-connector"));
         String message = null;
 
         switch (audit.getType()) {
@@ -252,8 +252,8 @@ public class ATNAAuditingActor extends UntypedActor {
 
         MediatorSocketRequest request = new MediatorSocketRequest(
                 ActorRef.noSender(), getSelf(), "ATNA Audit",
-                config.getProperties().getProperty("atna.host"),
-                Integer.parseInt(config.getProperties().getProperty("atna.udpPort")),
+                config.getProperty("atna.host"),
+                Integer.parseInt(config.getProperty("atna.udpPort")),
                 message
         );
 

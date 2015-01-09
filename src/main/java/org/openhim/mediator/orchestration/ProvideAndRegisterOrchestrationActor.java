@@ -269,8 +269,8 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
 
     private void resolvePatientIdentifiers() {
         AssigningAuthority targetPatientIdAuthority = new AssigningAuthority();
-        targetPatientIdAuthority.setAssigningAuthority(config.getProperties().getProperty("pix.requestedAssigningAuthority"));
-        targetPatientIdAuthority.setAssigningAuthorityId(config.getProperties().getProperty("pix.requestedAssigningAuthorityId"));
+        targetPatientIdAuthority.setAssigningAuthority(config.getProperty("pix.requestedAssigningAuthority"));
+        targetPatientIdAuthority.setAssigningAuthorityId(config.getProperty("pix.requestedAssigningAuthorityId"));
 
         for (IdentifierMapping mapping : enterprisePatientIds) {
             ResolvePatientIdentifier msg = new ResolvePatientIdentifier(
@@ -378,7 +378,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
             audit.setOutcome(true);
             audit.setSourceIP(xForwardedFor);
 
-            getContext().actorSelection("/user/" + config.getName() + "/atna-auditing").tell(audit, getSelf());
+            getContext().actorSelection(config.userPathFor("atna-auditing")).tell(audit, getSelf());
         } catch (Exception ex) {
             //quiet you!
         }

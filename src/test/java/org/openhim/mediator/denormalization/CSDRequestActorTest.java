@@ -3,50 +3,49 @@ package org.openhim.mediator.denormalization;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.actor.UntypedActor;
 import akka.testkit.JavaTestKit;
 import org.apache.http.HttpStatus;
 import org.junit.*;
 import org.openhim.mediator.datatypes.AssigningAuthority;
 import org.openhim.mediator.datatypes.Identifier;
-import org.openhim.mediator.dummies.MockLauncher;
 import org.openhim.mediator.engine.MediatorConfig;
 import org.openhim.mediator.engine.messages.MediatorHTTPRequest;
-import org.openhim.mediator.engine.messages.MediatorHTTPResponse;
+import org.openhim.mediator.engine.testing.MockHTTPConnector;
+import org.openhim.mediator.engine.testing.TestingUtils;
 import org.openhim.mediator.messages.ResolveFacilityIdentifier;
 import org.openhim.mediator.messages.ResolveFacilityIdentifierResponse;
 import org.openhim.mediator.messages.ResolveHealthcareWorkerIdentifier;
 import org.openhim.mediator.messages.ResolveHealthcareWorkerIdentifierResponse;
 import scala.concurrent.duration.Duration;
-
 import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
 public class CSDRequestActorTest {
-    private abstract static class MockHTTPServer extends UntypedActor {
-        abstract String getResponse();
+    private abstract static class CSDMock extends MockHTTPConnector {
+        @Override
+        public Integer getStatus() {
+            return HttpStatus.SC_OK;
+        }
 
         @Override
-        public void onReceive(Object msg) throws Exception {
-            if (msg instanceof MediatorHTTPRequest) {
-                assertEquals("POST", ((MediatorHTTPRequest) msg).getMethod());
-                assertEquals("http", ((MediatorHTTPRequest) msg).getScheme());
-                MediatorHTTPResponse rMsg = new MediatorHTTPResponse(
-                        (MediatorHTTPRequest)msg, getResponse(), HttpStatus.SC_OK, Collections.<String, String>emptyMap()
-                );
-                getSender().tell(rMsg, getSelf());
-            } else {
-                unhandled(msg);
-            }
+        public Map<String, String> getHeaders() {
+            return Collections.emptyMap();
+        }
+
+        @Override
+        public void executeOnReceive(MediatorHTTPRequest mediatorHTTPRequest) {
+            assertEquals("POST", mediatorHTTPRequest.getMethod());
+            assertEquals("http", mediatorHTTPRequest.getScheme());
         }
     }
 
-    private static class HCWMock extends MockHTTPServer {
+    private static class HCWMock extends CSDMock {
         @Override
-        String getResponse() {
+        public String getResponse() {
             return "<CSD xmlns='urn:ihe:iti:csd:2013'>\n"
                     + "  <serviceDirectory/>\n"
                     + "  <organizationDirectory/>\n"
@@ -60,9 +59,9 @@ public class CSDRequestActorTest {
         }
     }
 
-    private static class FacilityMock extends MockHTTPServer {
+    private static class FacilityMock extends CSDMock {
         @Override
-        String getResponse() {
+        public String getResponse() {
             return "<CSD xmlns='urn:ihe:iti:csd:2013'>\n"
                     + "  <serviceDirectory/>\n"
                     + "  <organizationDirectory/>\n"
@@ -97,9 +96,9 @@ public class CSDRequestActorTest {
         testConfig.setProperties("mediator-unit-test.properties");
     }
 
-    private void stubWith(Class<? extends MockHTTPServer> clazz) {
+    private void stubWith(Class<? extends MockHTTPConnector> clazz) {
         testConfig.setName(UUID.randomUUID().toString());
-        MockLauncher.launchActors(system, testConfig.getName(), Collections.singletonList(new MockLauncher.ActorToLaunch("http-connector", clazz)));
+        TestingUtils.launchMockHTTPConnector(system, testConfig.getName(), clazz);
     }
 
     private void stubForHealthcareWorkerLookup() {
@@ -111,7 +110,7 @@ public class CSDRequestActorTest {
     }
 
     private void clearStub() {
-        MockLauncher.clearActors(system, testConfig.getName());
+        TestingUtils.clearRootContext(system, testConfig.getName());
     }
 
     @Test

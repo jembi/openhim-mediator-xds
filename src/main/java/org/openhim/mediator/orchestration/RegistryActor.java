@@ -26,8 +26,9 @@ public class RegistryActor extends UntypedActor {
 
     private MediatorConfig config;
 
+    protected ActorRef resolvePatientIDActor;
+
     private ActorRef requestHandler;
-    private ActorRef respondTo;
     private String xForwardedFor;
     private String messageBuffer;
     private Identifier patientIdBuffer;
@@ -35,12 +36,13 @@ public class RegistryActor extends UntypedActor {
 
     public RegistryActor(MediatorConfig config) {
         this.config = config;
+
+        resolvePatientIDActor = getContext().actorOf(Props.create(PIXRequestActor.class, config), "pix-denormalization");
     }
 
 
     private void parseMessage(MediatorHTTPRequest request) {
         requestHandler = request.getRequestHandler();
-        respondTo = request.getRespondTo();
         xForwardedFor = request.getHeaders().get("X-Forwarded-For");
 
         //get request body
@@ -52,7 +54,6 @@ public class RegistryActor extends UntypedActor {
     }
 
     private void lookupEnterpriseIdentifier() {
-        ActorRef resolvePatientIDActor = getContext().actorOf(Props.create(PIXRequestActor.class, config), "pix-denormalization");
         String enterpriseIdentifierAuthority = config.getProperty("pix.requestedAssigningAuthority");
         String enterpriseIdentifierAuthorityId = config.getProperty("pix.requestedAssigningAuthorityId");
         AssigningAuthority authority = new AssigningAuthority(enterpriseIdentifierAuthority, enterpriseIdentifierAuthorityId);
@@ -71,7 +72,7 @@ public class RegistryActor extends UntypedActor {
         } else {
             log.info("Could not resolve patient identifier");
             FinishRequest response = new FinishRequest("Unknown patient identifier", "text/plain", HttpStatus.SC_NOT_FOUND);
-            respondTo.tell(response, getSelf());
+            requestHandler.tell(response, getSelf());
         }
     }
 
@@ -102,7 +103,7 @@ public class RegistryActor extends UntypedActor {
     }
 
     private void finalizeResponse(MediatorHTTPResponse response) {
-        respondTo.tell(response.toFinishRequest(), getSelf());
+        requestHandler.tell(response.toFinishRequest(), getSelf());
     }
 
     private void sendAuditMessage(ATNAAudit.TYPE type) {

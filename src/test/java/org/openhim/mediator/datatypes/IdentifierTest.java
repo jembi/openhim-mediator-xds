@@ -7,10 +7,19 @@ import static org.junit.Assert.*;
 public class IdentifierTest {
 
     @Test
+    public void testParseCX() throws Exception {
+        String cx = "112244^^^&1.2.840.113619.6.197&ISO";
+        Identifier id = new Identifier(cx);
+        assertEquals("112244", id.getIdentifier());
+        assertNotNull(id.getAssigningAuthority());
+        assertEquals("1.2.840.113619.6.197", id.getAssigningAuthority().getAssigningAuthorityId());
+    }
+
+    @Test
     public void testToCX() throws Exception {
-        String xcn = "112244^^^&1.2.840.113619.6.197&ISO";
+        String cx = "112244^^^&1.2.840.113619.6.197&ISO";
         Identifier id = new Identifier("112244", new AssigningAuthority("", "1.2.840.113619.6.197"));
-        assertEquals(xcn, id.toCX());
+        assertEquals(cx, id.toCX());
     }
 
     @Test

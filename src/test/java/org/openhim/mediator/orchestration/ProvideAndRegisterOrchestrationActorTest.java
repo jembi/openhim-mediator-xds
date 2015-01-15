@@ -18,6 +18,7 @@ import org.openhim.mediator.datatypes.AssigningAuthority;
 import org.openhim.mediator.datatypes.Identifier;
 import org.openhim.mediator.dummies.DummyResolveIdentifierActor;
 import org.openhim.mediator.engine.MediatorConfig;
+import org.openhim.mediator.engine.messages.FinishRequest;
 import org.openhim.mediator.messages.*;
 import org.openhim.mediator.normalization.ParseProvideAndRegisterRequestActor;
 import scala.concurrent.duration.Duration;
@@ -201,4 +202,48 @@ public class ProvideAndRegisterOrchestrationActorTest {
         }};
     }
 
+    @Test
+    public void validateAndEnrichPatient_shouldRespondWithBadRequestIfPatientNotResolved() throws Exception {
+        Identifier responseId = null;
+        resolvePIDDummy = system.actorOf(Props.create(DummyResolveIdentifierActor.class, ResolvePatientIdentifier.class, ResolvePatientIdentifierResponse.class, responseId));
+        setupResolveHCWIDMock();
+        setupResolveFacilityIDMock();
+
+        new JavaTestKit(system) {{
+            sendPnRMessage(system, getRef(), "pnr1.xml");
+            FinishRequest response = expectMsgClass(waitTime, FinishRequest.class);
+
+            assertEquals(new Integer(400), response.getResponseStatus());
+        }};
+    }
+
+    @Test
+    public void validateAndEnrichProvider_shouldRespondWithBadRequestIfProviderNotResolved() throws Exception {
+        setupResolvePatientIDMock();
+        Identifier responseId = null;
+        resolveHWIDDummy = system.actorOf(Props.create(DummyResolveIdentifierActor.class, ResolveHealthcareWorkerIdentifier.class, ResolveHealthcareWorkerIdentifierResponse.class, responseId));
+        setupResolveFacilityIDMock();
+
+        new JavaTestKit(system) {{
+            sendPnRMessage(system, getRef(), "pnr1.xml");
+            FinishRequest response = expectMsgClass(waitTime, FinishRequest.class);
+
+            assertEquals(new Integer(400), response.getResponseStatus());
+        }};
+    }
+
+    @Test
+    public void validateAndEnrichFacility_shouldRespondWithBadRequestIfFacilityNotResolved() throws Exception {
+        setupResolvePatientIDMock();
+        setupResolveHCWIDMock();
+        Identifier responseId = null;
+        resolveFIDDummy = system.actorOf(Props.create(DummyResolveIdentifierActor.class, ResolveFacilityIdentifier.class, ResolveFacilityIdentifierResponse.class, responseId));
+
+        new JavaTestKit(system) {{
+            sendPnRMessage(system, getRef(), "pnr1.xml");
+            FinishRequest response = expectMsgClass(waitTime, FinishRequest.class);
+
+            assertEquals(new Integer(400), response.getResponseStatus());
+        }};
+    }
 }

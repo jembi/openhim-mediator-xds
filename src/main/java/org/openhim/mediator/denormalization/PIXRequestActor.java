@@ -21,6 +21,9 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
+ * Actor for processing PIX messages - will create and process resolve patient identifier requests (QBP_Q21),
+ * resolving a requested identifier in a particular domain. The identifier returned will be null if the id could not be resolved.
+ * <br/><br/>
  * Messages supported:
  * <ul>
  * <li>ResolvePatientIdentifier - responds with ResolvePatientIdentifierResponse</li>

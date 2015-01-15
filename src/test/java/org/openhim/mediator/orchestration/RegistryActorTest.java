@@ -16,6 +16,7 @@ import org.openhim.mediator.engine.messages.FinishRequest;
 import org.openhim.mediator.engine.messages.MediatorHTTPRequest;
 import org.openhim.mediator.engine.testing.MockHTTPConnector;
 import org.openhim.mediator.engine.testing.MockLauncher;
+import org.openhim.mediator.engine.testing.TestingUtils;
 import org.openhim.mediator.messages.ResolvePatientIdentifier;
 import org.openhim.mediator.messages.ResolvePatientIdentifierResponse;
 import org.openhim.mediator.normalization.ParseRegistryStoredQueryActor;
@@ -82,12 +83,12 @@ public class RegistryActorTest {
         toLaunch.add(new MockLauncher.ActorToLaunch("http-connector", MockRegistry.class));
         toLaunch.add(new MockLauncher.ActorToLaunch("parse-registry-stored-query", ParseRegistryStoredQueryActor.class));
         toLaunch.add(new MockLauncher.ActorToLaunch("enrich-registry-stored-query", EnrichRegistryStoredQueryActor.class));
-        MockLauncher.launchActors(system, testConfig.getName(), toLaunch);
+        TestingUtils.launchActors(system, testConfig.getName(), toLaunch);
     }
 
     @After
     public void after() {
-        MockLauncher.clearActors(system, testConfig.getName());
+        TestingUtils.clearRootContext(system, testConfig.getName());
         JavaTestKit.shutdownActorSystem(system);
         system = null;
     }

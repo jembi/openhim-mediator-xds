@@ -26,6 +26,7 @@ import org.openhim.mediator.normalization.ParseProvideAndRegisterRequestActor;
 
 import javax.xml.bind.JAXBException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -43,6 +44,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
 
     private abstract class IdentifierMapping {
         boolean resolved = false;
+        boolean successful = false;
         Identifier fromId;
 
         abstract void resolve(Identifier resolvedId);
@@ -60,8 +62,12 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
 
         @Override
         void resolve(Identifier resolvedId) {
-            InfosetUtil.setExternalIdentifierValue(documentNodeURN, resolvedId.toString(), documentNode);
             resolved = true;
+
+            if (resolvedId!=null) {
+                InfosetUtil.setExternalIdentifierValue(documentNodeURN, resolvedId.toString(), documentNode);
+                successful = true;
+            }
         }
     }
 
@@ -75,10 +81,14 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
 
         @Override
         void resolve(Identifier resolvedId) {
-            String newPersonXCN = resolvedId.toXCN();
-            slotList.clear();
-            slotList.add(newPersonXCN);
             resolved = true;
+
+            if (resolvedId!=null) {
+                String newPersonXCN = resolvedId.toXCN();
+                slotList.clear();
+                slotList.add(newPersonXCN);
+                successful = true;
+            }
         }
     }
 
@@ -94,10 +104,14 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
 
         @Override
         void resolve(Identifier resolvedId) {
-            String newInstitutionXON = resolvedId.toXON(localLocationName);
-            slotList.clear();
-            slotList.add(newInstitutionXON);
             resolved = true;
+
+            if (resolvedId!=null) {
+                String newInstitutionXON = resolvedId.toXON(localLocationName);
+                slotList.clear();
+                slotList.add(newInstitutionXON);
+                successful = true;
+            }
         }
     }
 
@@ -330,19 +344,34 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
 
     private boolean checkAndRespondIfAllResolved() {
         if (areAllIdentifiersResolved()) {
-            log.info("All identifiers resolved. Responding with enriched document.");
             try {
-                messageBuffer = Util.marshallJAXBObject("ihe.iti.xds_b._2007", new ObjectFactory().createProvideAndRegisterDocumentSetRequest(parsedRequest), false);
-                OrchestrateProvideAndRegisterRequestResponse response = new OrchestrateProvideAndRegisterRequestResponse(originalRequest, messageBuffer);
-                originalRequest.getRespondTo().tell(response, getSelf());
+                String errors = getResolveIdentifierErrors();
+
+                if (errors==null) {
+                    respondSuccess();
+                } else {
+                    respondBadRequest(errors);
+                }
             } catch (JAXBException ex) {
                 originalRequest.getRequestHandler().tell(new ExceptError(ex), getSelf());
             } finally {
                 sendAuditMessage(ATNAAudit.TYPE.PROVIDE_AND_REGISTER_RESPONSE);
+                return true;
             }
-            return true;
         }
         return false;
+    }
+
+    private void respondSuccess() throws JAXBException {
+        log.info("All identifiers resolved. Responding with enriched document.");
+        messageBuffer = Util.marshallJAXBObject("ihe.iti.xds_b._2007", new ObjectFactory().createProvideAndRegisterDocumentSetRequest(parsedRequest), false);
+        OrchestrateProvideAndRegisterRequestResponse response = new OrchestrateProvideAndRegisterRequestResponse(originalRequest, messageBuffer);
+        originalRequest.getRespondTo().tell(response, getSelf());
+    }
+
+    private void respondBadRequest(String errors) {
+        FinishRequest fr = new FinishRequest(errors, "text/plain", HttpStatus.SC_BAD_REQUEST);
+        originalRequest.getRequestHandler().tell(fr, getSelf());
     }
 
     private boolean areAllIdentifiersResolved() {
@@ -358,6 +387,61 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
             }
         }
         return true;
+    }
+
+    /**
+     * @return null if all identifiers were resolved successfully, else an error message listing all failed identifiers
+     */
+    private String getResolveIdentifierErrors() {
+        List<IdentifierMapping> unsuccessfulPatientIDs = getAllUnsuccessfulIdentifiers(enterprisePatientIds);
+        List<IdentifierMapping> unsuccessfulHealthcareWorkerIDs = getAllUnsuccessfulIdentifiers(enterpriseHealthcareWorkerIds);
+        List<IdentifierMapping> unsuccessfulFacilityIDs = getAllUnsuccessfulIdentifiers(enterpriseFacilityIds);
+
+        //all successful
+        if (unsuccessfulPatientIDs.isEmpty() && unsuccessfulHealthcareWorkerIDs.isEmpty() && unsuccessfulFacilityIDs.isEmpty()) {
+            return null;
+        }
+
+        StringBuilder errors = new StringBuilder();
+
+        if (!unsuccessfulPatientIDs.isEmpty()) {
+            errors.append("Failed to resolve patient identifiers for:\n");
+            for (IdentifierMapping id : unsuccessfulPatientIDs) {
+                errors.append(id.fromId.toCX());
+            }
+            errors.append("\n");
+        }
+
+        if (!unsuccessfulHealthcareWorkerIDs.isEmpty()) {
+            errors.append("Failed to resolve healthcare worker identifiers for:\n");
+            for (IdentifierMapping id : unsuccessfulHealthcareWorkerIDs) {
+                errors.append(id.fromId.toXCN());
+            }
+            errors.append("\n");
+        }
+
+        if (!unsuccessfulFacilityIDs.isEmpty()) {
+            errors.append("Failed to resolve facility identifiers for:\n");
+            for (IdentifierMapping id : unsuccessfulFacilityIDs) {
+                FacilityIdentifierMapping fim = ((FacilityIdentifierMapping) id);
+                errors.append(fim.fromId.toXON(fim.localLocationName));
+            }
+            errors.append("\n");
+        }
+
+        return errors.toString();
+    }
+
+    private List<IdentifierMapping> getAllUnsuccessfulIdentifiers(List<IdentifierMapping> lst) {
+        List<IdentifierMapping> result = new LinkedList<>();
+
+        for (IdentifierMapping mapping : lst) {
+            if (mapping.resolved && !mapping.successful) {
+                result.add(mapping);
+            }
+        }
+
+        return result;
     }
 
     private void sendAuditMessage(ATNAAudit.TYPE type) {

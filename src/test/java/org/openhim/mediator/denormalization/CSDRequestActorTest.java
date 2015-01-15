@@ -9,6 +9,7 @@ import org.junit.*;
 import org.openhim.mediator.datatypes.AssigningAuthority;
 import org.openhim.mediator.datatypes.Identifier;
 import org.openhim.mediator.engine.MediatorConfig;
+import org.openhim.mediator.engine.messages.ExceptError;
 import org.openhim.mediator.engine.messages.MediatorHTTPRequest;
 import org.openhim.mediator.engine.testing.MockHTTPConnector;
 import org.openhim.mediator.engine.testing.TestingUtils;
@@ -19,7 +20,6 @@ import org.openhim.mediator.messages.ResolveHealthcareWorkerIdentifierResponse;
 import scala.concurrent.duration.Duration;
 import java.util.Collections;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
@@ -75,6 +75,25 @@ public class CSDRequestActorTest {
         }
     }
 
+    private static class NoResultsMock extends CSDMock {
+        @Override
+        public String getResponse() {
+            return "<CSD xmlns='urn:ihe:iti:csd:2013'>\n"
+                    + "  <serviceDirectory/>\n"
+                    + "  <organizationDirectory/>\n"
+                    + "  <providerDirectory/>\n"
+                    + "  <facilityDirectory/>\n"
+                    + "</CSD>\n";
+        }
+    }
+
+    private static class BadResponseMock extends CSDMock {
+        @Override
+        public String getResponse() {
+            return "a bad response!";
+        }
+    }
+
     static ActorSystem system;
     MediatorConfig testConfig;
 
@@ -93,11 +112,11 @@ public class CSDRequestActorTest {
     @Before
     public void setUp() throws Exception {
         testConfig = new MediatorConfig();
+        testConfig.setName("csd-tests");
         testConfig.setProperties("mediator-unit-test.properties");
     }
 
     private void stubWith(Class<? extends MockHTTPConnector> clazz) {
-        testConfig.setName(UUID.randomUUID().toString());
         TestingUtils.launchMockHTTPConnector(system, testConfig.getName(), clazz);
     }
 
@@ -107,6 +126,14 @@ public class CSDRequestActorTest {
 
     private void stubForFacilityLookup() {
         stubWith(FacilityMock.class);
+    }
+
+    private void stubNoResults() {
+        stubWith(NoResultsMock.class);
+    }
+
+    private void stubBadResponse() {
+        stubWith(BadResponseMock.class);
     }
 
     private void clearStub() {
@@ -143,10 +170,10 @@ public class CSDRequestActorTest {
 
     @Test
     public void resolveHealthcareWorkerIdentifier() throws Exception {
-        stubForHealthcareWorkerLookup();
-
         new JavaTestKit(system) {{
             try {
+                stubForHealthcareWorkerLookup();
+
                 ActorRef actor = system.actorOf(Props.create(CSDRequestActor.class, testConfig));
 
                 Identifier testId = new Identifier("1234", new AssigningAuthority("", "testauth"));
@@ -171,10 +198,10 @@ public class CSDRequestActorTest {
 
     @Test
     public void resolveFacilityIdentifier() throws Exception {
-        stubForFacilityLookup();
-
         new JavaTestKit(system) {{
             try {
+                stubForFacilityLookup();
+
                 ActorRef actor = system.actorOf(Props.create(CSDRequestActor.class, testConfig));
 
                 Identifier testId = new Identifier("1234", new AssigningAuthority("", "testauth"));
@@ -191,6 +218,84 @@ public class CSDRequestActorTest {
 
                 assertEquals("2345", response.getIdentifier().getIdentifier());
                 assertEquals("1.2.3", response.getIdentifier().getAssigningAuthority().getAssigningAuthorityId());
+            } finally {
+                clearStub();
+            }
+        }};
+    }
+
+    @Test
+    public void resolveHealtcareWorker_NoResults() throws Exception {
+        new JavaTestKit(system) {{
+            try {
+                stubNoResults();
+
+                ActorRef actor = system.actorOf(Props.create(CSDRequestActor.class, testConfig));
+
+                Identifier testId = new Identifier("1234", new AssigningAuthority("", "testauth"));
+                ResolveHealthcareWorkerIdentifier testMsg = new ResolveHealthcareWorkerIdentifier(
+                        getRef(), getRef(), testId, new AssigningAuthority("", "not used")
+                );
+
+                actor.tell(testMsg, getRef());
+
+                ResolveHealthcareWorkerIdentifierResponse response = expectMsgClass(
+                        Duration.create(100, TimeUnit.MILLISECONDS),
+                        ResolveHealthcareWorkerIdentifierResponse.class
+                );
+
+                assertNull(response.getIdentifier());
+            } finally {
+                clearStub();
+            }
+        }};
+    }
+
+    @Test
+    public void resolveFacility_NoResults() throws Exception {
+        new JavaTestKit(system) {{
+            try {
+                stubNoResults();
+
+                ActorRef actor = system.actorOf(Props.create(CSDRequestActor.class, testConfig));
+
+                Identifier testId = new Identifier("1234", new AssigningAuthority("", "testauth"));
+                ResolveFacilityIdentifier testMsg = new ResolveFacilityIdentifier(
+                        getRef(), getRef(), testId, new AssigningAuthority("", "not used")
+                );
+
+                actor.tell(testMsg, getRef());
+
+                ResolveFacilityIdentifierResponse response = expectMsgClass(
+                        Duration.create(100, TimeUnit.MILLISECONDS),
+                        ResolveFacilityIdentifierResponse.class
+                );
+
+                assertNull(response.getIdentifier());
+            } finally {
+                clearStub();
+            }
+        }};
+    }
+
+    @Test
+    public void testBadResponse() throws Exception {
+        new JavaTestKit(system) {{
+            try {
+                stubBadResponse();
+
+                ActorRef actor = system.actorOf(Props.create(CSDRequestActor.class, testConfig));
+
+                Identifier testId = new Identifier("1234", new AssigningAuthority("", "testauth"));
+                ResolveFacilityIdentifier testMsg = new ResolveFacilityIdentifier(
+                        getRef(), getRef(), testId, new AssigningAuthority("", "not used")
+                );
+
+                actor.tell(testMsg, getRef());
+
+                ExceptError response = expectMsgClass(Duration.create(100, TimeUnit.MILLISECONDS),ExceptError.class);
+
+                assertNotNull(response.getError());
             } finally {
                 clearStub();
             }

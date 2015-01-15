@@ -138,7 +138,10 @@ public class CSDRequestActor extends UntypedActor {
     }
 
     private BaseResolveIdentifierResponse buildResponse(BaseResolveIdentifier originalRequest, String resolvedId) throws ValidationException {
-        Identifier id = buildIdentifier(resolvedId);
+        Identifier id = null;
+        if (resolvedId!=null && !resolvedId.isEmpty()) {
+            id = buildIdentifier(resolvedId);
+        }
 
         if (originalRequest instanceof ResolveHealthcareWorkerIdentifier) {
             return new ResolveHealthcareWorkerIdentifierResponse(originalRequest, id);
@@ -158,9 +161,6 @@ public class CSDRequestActor extends UntypedActor {
             Document doc = builder.parse(IOUtils.toInputStream(csdResponse));
             XPath xpath = XPathFactory.newInstance().newXPath();
             String resolvedId = xpath.compile(getXPAthExpressionForQueryType(originalRequest)).evaluate(doc);
-            if (resolvedId==null || resolvedId.isEmpty()) {
-                throw new ValidationException("Failed to read identifier from CSD response");
-            }
 
             BaseResolveIdentifierResponse finalResponse = buildResponse(originalRequest, resolvedId);
             originalRequest.getRespondTo().tell(finalResponse, getSelf());

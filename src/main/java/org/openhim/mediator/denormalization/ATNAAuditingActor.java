@@ -3,21 +3,32 @@ package org.openhim.mediator.denormalization;
 import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
 import akka.actor.UntypedActor;
+import akka.dispatch.OnComplete;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import ihe.iti.atna.AuditMessage;
 import ihe.iti.atna.EventIdentificationType;
+import org.apache.commons.io.IOUtils;
 import org.openhim.mediator.ATNAUtil;
 import org.openhim.mediator.datatypes.Identifier;
 import org.openhim.mediator.engine.MediatorConfig;
 import org.openhim.mediator.engine.messages.MediatorSocketRequest;
 import org.openhim.mediator.messages.ATNAAudit;
+import scala.concurrent.ExecutionContext;
+import scala.concurrent.Future;
 
+import javax.net.ssl.SSLSocketFactory;
 import javax.xml.bind.JAXBException;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.math.BigInteger;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+
+import static akka.dispatch.Futures.future;
 
 /**
  * An actor for sending out audit messages to an audit repository.
@@ -221,43 +232,98 @@ public class ATNAAuditingActor extends UntypedActor {
         return ATNAUtil.marshallATNAObject(res);
     }
 
+
+    private void sendUsingUDP(MediatorSocketRequest request) {
+        ActorSelection udpConnector = getContext().actorSelection(config.userPathFor("udp-fire-forget-connector"));
+        udpConnector.tell(request, getSelf());
+    }
+
+    private Socket getSocket(final MediatorSocketRequest req) throws IOException {
+        if (req.isSecure()) {
+            SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+            return factory.createSocket(req.getHost(), req.getPort());
+        } else {
+            return new Socket(req.getHost(), req.getPort());
+        }
+    }
+
+    private void sendUsingTCP(final MediatorSocketRequest request) throws IOException {
+        final Socket socket = getSocket(request);
+
+        ExecutionContext ec = getContext().dispatcher();
+        Future<Boolean> f = future(new Callable<Boolean>() {
+            public Boolean call() throws IOException {
+                DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+                out.writeBytes(request.getBody());
+                return Boolean.TRUE;
+            }
+        }, ec);
+        f.onComplete(new OnComplete<Boolean>() {
+            @Override
+            public void onComplete(Throwable ex, Boolean result) throws Throwable {
+                IOUtils.closeQuietly(socket);
+
+                if (ex!=null) {
+                    log.error(ex, "Exception during TCP send");
+                }
+            }
+        }, ec);
+    }
+
+    private String generateMesage(ATNAAudit audit) throws JAXBException {
+        switch (audit.getType()) {
+            case PIX_REQUEST:
+                return generateForPIXRequest(audit);
+            case REGISTRY_QUERY_RECEIVED:
+                return generateForRegistryQueryReceived(audit);
+            case REGISTRY_QUERY_RESPONSE:
+                return generateForRegistryQueryResponse(audit);
+            case PROVIDE_AND_REGISTER_RECEIVED:
+                return generateForPNRReceived(audit);
+            case PROVIDE_AND_REGISTER_RESPONSE:
+                return generateForPNRResponse(audit);
+        }
+
+        //shouldn't happen as we cover all the enum cases
+        return "";
+    }
+
     private void sendAuditMessage(ATNAAudit audit)
             throws Exception { //Just die if something goes wrong, akka will restart
 
-        log.info("Sending ATNA " + audit.getType() + " audit message using UDP");
-
-        ActorSelection udpConnector = getContext().actorSelection(config.userPathFor("udp-fire-forget-connector"));
-        String message = null;
-
-        switch (audit.getType()) {
-            case PIX_REQUEST:
-                message = generateForPIXRequest(audit);
-                break;
-            case REGISTRY_QUERY_RECEIVED:
-                message = generateForRegistryQueryReceived(audit);
-                break;
-            case REGISTRY_QUERY_RESPONSE:
-                message = generateForRegistryQueryResponse(audit);
-                break;
-            case PROVIDE_AND_REGISTER_RECEIVED:
-                message = generateForPNRReceived(audit);
-                break;
-            case PROVIDE_AND_REGISTER_RESPONSE:
-                message = generateForPNRResponse(audit);
-                break;
-        }
+        String message = generateMesage(audit);
 
         message = ATNAUtil.build_TCP_Msg_header() + message;
         message = message.length() + " " + message + "\r\n";
+        boolean useTCP;
+        int port;
+
+        if (config.getProperty("atna.useTcp").equalsIgnoreCase("true")) {
+            port = Integer.parseInt(config.getProperty("atna.tcpPort"));
+            useTCP = true;
+        } else {
+            port = Integer.parseInt(config.getProperty("atna.udpPort"));
+            useTCP = false;
+        }
 
         MediatorSocketRequest request = new MediatorSocketRequest(
-                ActorRef.noSender(), getSelf(), "ATNA Audit",
+                ActorRef.noSender(),
+                getSelf(),
+                "ATNA Audit",
+                null,
                 config.getProperty("atna.host"),
-                Integer.parseInt(config.getProperty("atna.udpPort")),
-                message
+                port,
+                message,
+                config.getProperty("ihe.secure").equalsIgnoreCase("true")
         );
 
-        udpConnector.tell(request, getSelf());
+        if (useTCP) {
+            log.info("Sending ATNA " + audit.getType() + " audit message using TCP");
+            sendUsingTCP(request);
+        } else {
+            log.info("Sending ATNA " + audit.getType() + " audit message using UDP");
+            sendUsingUDP(request);
+        }
     }
 
     @Override

@@ -239,7 +239,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
                 }
 
                 if (localProviderID == null && localLocationID == null) {
-                    throw new ValidationException("EPID and ELID could not be extracted from the CDS metadata");
+                    throw new ValidationException("Local provider and facility identifiers could not be extracted from the XDS metadata");
                 }
 
                 if (localProviderID!=null) {
@@ -289,8 +289,8 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
 
     private void resolvePatientIdentifiers() {
         AssigningAuthority targetPatientIdAuthority = new AssigningAuthority();
-        targetPatientIdAuthority.setAssigningAuthority(config.getProperty("pix.requestedAssigningAuthority"));
-        targetPatientIdAuthority.setAssigningAuthorityId(config.getProperty("pix.requestedAssigningAuthorityId"));
+        targetPatientIdAuthority.setAssigningAuthority(config.getProperty("client.requestedAssigningAuthority"));
+        targetPatientIdAuthority.setAssigningAuthorityId(config.getProperty("client.requestedAssigningAuthorityId"));
 
         for (IdentifierMapping mapping : enterprisePatientIds) {
             ResolvePatientIdentifier msg = new ResolvePatientIdentifier(
@@ -302,9 +302,8 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
 
     private void resolveHealthcareWorkerIdentifiers() {
         AssigningAuthority targetHealthcareWorkerIdAuthority = new AssigningAuthority();
-        //TODO conf
-        targetHealthcareWorkerIdAuthority.setAssigningAuthority("EPID");
-        targetHealthcareWorkerIdAuthority.setAssigningAuthorityId("EPID");
+        targetHealthcareWorkerIdAuthority.setAssigningAuthority(config.getProperty("provider.requestedAssigningAuthority"));
+        targetHealthcareWorkerIdAuthority.setAssigningAuthorityId(config.getProperty("provider.requestedAssigningAuthorityId"));
 
         for (IdentifierMapping mapping : enterpriseHealthcareWorkerIds) {
             ResolveHealthcareWorkerIdentifier msg = new ResolveHealthcareWorkerIdentifier(
@@ -316,9 +315,8 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
 
     private void resolveFacilityIdentifiers() {
         AssigningAuthority targetFacilityIdAuthority = new AssigningAuthority();
-        //TODO conf
-        targetFacilityIdAuthority.setAssigningAuthority("ELID");
-        targetFacilityIdAuthority.setAssigningAuthorityId("ELID");
+        targetFacilityIdAuthority.setAssigningAuthority(config.getProperty("facility.requestedAssigningAuthority"));
+        targetFacilityIdAuthority.setAssigningAuthorityId(config.getProperty("facility.requestedAssigningAuthorityId"));
 
         for (IdentifierMapping mapping : enterpriseFacilityIds) {
             ResolveFacilityIdentifier msg = new ResolveFacilityIdentifier(
@@ -413,7 +411,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         if (!unsuccessfulPatientIDs.isEmpty()) {
             errors.append("Failed to resolve patient identifiers for:\n");
             for (IdentifierMapping id : unsuccessfulPatientIDs) {
-                errors.append(id.fromId.toCX());
+                errors.append(id.fromId.toCX() + "\n");
             }
             errors.append("\n");
         }
@@ -421,7 +419,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         if (!unsuccessfulHealthcareWorkerIDs.isEmpty()) {
             errors.append("Failed to resolve healthcare worker identifiers for:\n");
             for (IdentifierMapping id : unsuccessfulHealthcareWorkerIDs) {
-                errors.append(id.fromId.toXCN());
+                errors.append(id.fromId.toXCN() + "\n");
             }
             errors.append("\n");
         }
@@ -430,7 +428,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
             errors.append("Failed to resolve facility identifiers for:\n");
             for (IdentifierMapping id : unsuccessfulFacilityIDs) {
                 FacilityIdentifierMapping fim = ((FacilityIdentifierMapping) id);
-                errors.append(fim.fromId.toXON(fim.localLocationName));
+                errors.append(fim.fromId.toXON(fim.localLocationName) + "\n");
             }
             errors.append("\n");
         }

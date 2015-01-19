@@ -185,9 +185,10 @@ public class RepositoryActor extends UntypedActor {
     private void forwardRequestToRepository() {
         ActorSelection httpConnector = getContext().actorSelection(config.userPathFor("http-connector"));
 
-        Map<String, String> headers = new HashMap<>(originalRequest.getHeaders());
-        headers.remove("Content-Length");
-        headers.remove("content-length");
+        // Copy original content type
+        String contentType = originalRequest.getHeaders().get("Content-Type");
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Content-Type", contentType);
 
         String scheme;
         Integer port;

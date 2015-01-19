@@ -31,10 +31,7 @@ import org.openhim.mediator.messages.*;
 import org.openhim.mediator.normalization.ParseProvideAndRegisterRequestActor;
 
 import javax.xml.bind.JAXBException;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * An orchestrator for enriching XDS.b Provide and Register Document Set requests.
@@ -52,6 +49,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         boolean resolved = false;
         boolean successful = false;
         Identifier fromId;
+        String correlationId;
 
         abstract void resolve(Identifier resolvedId);
     }
@@ -293,8 +291,10 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         targetPatientIdAuthority.setAssigningAuthorityId(config.getProperty("client.requestedAssigningAuthorityId"));
 
         for (IdentifierMapping mapping : enterprisePatientIds) {
+            String correlationId = UUID.randomUUID().toString();
+            mapping.correlationId = correlationId;
             ResolvePatientIdentifier msg = new ResolvePatientIdentifier(
-                    originalRequest.getRequestHandler(), getSelf(), mapping.fromId.toString(), mapping.fromId, targetPatientIdAuthority
+                    originalRequest.getRequestHandler(), getSelf(), correlationId, mapping.fromId, targetPatientIdAuthority
             );
             resolvePatientIdHandler.tell(msg, getSelf());
         }
@@ -306,8 +306,10 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         targetHealthcareWorkerIdAuthority.setAssigningAuthorityId(config.getProperty("provider.requestedAssigningAuthorityId"));
 
         for (IdentifierMapping mapping : enterpriseHealthcareWorkerIds) {
+            String correlationId = UUID.randomUUID().toString();
+            mapping.correlationId = correlationId;
             ResolveHealthcareWorkerIdentifier msg = new ResolveHealthcareWorkerIdentifier(
-                    originalRequest.getRequestHandler(), getSelf(), mapping.fromId.toString(), mapping.fromId, targetHealthcareWorkerIdAuthority
+                    originalRequest.getRequestHandler(), getSelf(), correlationId, mapping.fromId, targetHealthcareWorkerIdAuthority
             );
             resolveHealthcareWorkerIdHandler.tell(msg, getSelf());
         }
@@ -319,8 +321,10 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         targetFacilityIdAuthority.setAssigningAuthorityId(config.getProperty("facility.requestedAssigningAuthorityId"));
 
         for (IdentifierMapping mapping : enterpriseFacilityIds) {
+            String correlationId = UUID.randomUUID().toString();
+            mapping.correlationId = correlationId;
             ResolveFacilityIdentifier msg = new ResolveFacilityIdentifier(
-                    originalRequest.getRequestHandler(), getSelf(), mapping.fromId.toString(), mapping.fromId, targetFacilityIdAuthority
+                    originalRequest.getRequestHandler(), getSelf(), correlationId, mapping.fromId, targetFacilityIdAuthority
             );
             resolveFacilityIdHandler.tell(msg, getSelf());
         }
@@ -340,7 +344,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
 
     private void enrichResolvedId(BaseResolveIdentifierResponse response, List<IdentifierMapping> lst) {
         for (IdentifierMapping mapping : lst) {
-            if (mapping.fromId.toString().equals(response.getOriginalRequest().getCorrelationId())) {
+            if (mapping.correlationId.equals(response.getOriginalRequest().getCorrelationId())) {
                 mapping.resolve(response.getIdentifier());
             }
         }

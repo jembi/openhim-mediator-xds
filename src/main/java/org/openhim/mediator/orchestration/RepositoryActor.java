@@ -192,7 +192,7 @@ public class RepositoryActor extends UntypedActor {
 
         String scheme;
         Integer port;
-        if (config.getProperty("ihe.secure").equals("true")) {
+        if (config.getProperty("xds.repository.secure").equals("true")) {
             scheme = "https";
             port = Integer.parseInt(config.getProperty("xds.repository.securePort"));
         } else {

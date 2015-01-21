@@ -320,7 +320,7 @@ public class ATNAAuditingActor extends UntypedActor {
                 config.getProperty("atna.host"),
                 port,
                 message,
-                config.getProperty("ihe.secure").equalsIgnoreCase("true")
+                config.getProperty("atna.secure").equalsIgnoreCase("true")
         );
 
         if (useTCP) {

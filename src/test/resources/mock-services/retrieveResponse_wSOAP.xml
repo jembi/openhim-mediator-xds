@@ -1,0 +1,13 @@
+--uuid:e59abb7b-d9c5-4f29-9854-e89b12b41e12
+Content-Type: application/xop+xml; charset=UTF-8; type="application/soap+xml";
+Content-Transfer-Encoding: binary
+Content-ID: <root.message@cxf.apache.org>
+
+<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"><soap:Header><Action xmlns="http://www.w3.org/2005/08/addressing">urn:ihe:iti:2007:RetrieveDocumentSetResponse</Action><MessageID xmlns="http://www.w3.org/2005/08/addressing">urn:uuid:daafca7c-564c-4ac4-a8c1-096cb0ccde99</MessageID><To xmlns="http://www.w3.org/2005/08/addressing">http://www.w3.org/2005/08/addressing/anonymous</To><RelatesTo xmlns="http://www.w3.org/2005/08/addressing">uuid:8b1a78b1-43ca-484e-8852-4fc2a99d3530</RelatesTo></soap:Header><soap:Body><ns5:RetrieveDocumentSetResponse xmlns:ns5="urn:ihe:iti:xds-b:2007" xmlns:ns2="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0" xmlns:ns4="urn:oasis:names:tc:ebxml-regrep:xsd:lcm:3.0" xmlns:ns3="urn:oasis:names:tc:ebxml-regrep:xsd:rs:3.0" xmlns:ns6="urn:oasis:names:tc:ebxml-regrep:xsd:query:3.0"><ns3:RegistryResponse status="urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success"/><ns5:DocumentResponse><ns5:RepositoryUniqueId>1.19.6.24.109.42.1.5.1</ns5:RepositoryUniqueId><ns5:DocumentUniqueId>1.3.6.1.4.1.21367.2010.1.2.152512</ns5:DocumentUniqueId><ns5:mimeType>text/plain</ns5:mimeType><ns5:Document><xop:Include xmlns:xop="http://www.w3.org/2004/08/xop/include" href="cid:9422c6dd-ae49-41cf-a0ad-9ff91a0f3b8a%40null"/></ns5:Document></ns5:DocumentResponse></ns5:RetrieveDocumentSetResponse></soap:Body></soap:Envelope>
+--uuid:e59abb7b-d9c5-4f29-9854-e89b12b41e12
+Content-Type: text/plain
+Content-Transfer-Encoding: binary
+Content-ID: <9422c6dd-ae49-41cf-a0ad-9ff91a0f3b8a@null>
+
+My test document
+--uuid:e59abb7b-d9c5-4f29-9854-e89b12b41e12--

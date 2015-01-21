@@ -1,0 +1,13 @@
+--uuid:9d70af7a-1e95-4187-8860-de7c7662ce3c
+Content-Type: application/xop+xml; charset=UTF-8; type="application/soap+xml";
+Content-Transfer-Encoding: binary
+Content-ID: <root.message@cxf.apache.org>
+
+<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"><soap:Header><Action xmlns="http://www.w3.org/2005/08/addressing">urn:ihe:iti:2007:ProvideAndRegisterDocumentSet-bResponse</Action><MessageID xmlns="http://www.w3.org/2005/08/addressing">urn:uuid:c9632e41-ecef-4a09-ac58-d224e6ec6bd8</MessageID><To xmlns="http://www.w3.org/2005/08/addressing">http://www.w3.org/2005/08/addressing/anonymous</To><RelatesTo xmlns="http://www.w3.org/2005/08/addressing">uuid:569bff90-7fca-422f-aa91-d4b4a092241c</RelatesTo><mule:header xmlns:mule="http://www.muleumo.org/providers/soap/1.0"><mule:MULE_CORRELATION_ID>8b8dc365-33c9-4984-8c6e-9f3d779d953d</mule:MULE_CORRELATION_ID><mule:MULE_CORRELATION_GROUP_SIZE>-1</mule:MULE_CORRELATION_GROUP_SIZE><mule:MULE_CORRELATION_SEQUENCE>-1</mule:MULE_CORRELATION_SEQUENCE></mule:header></soap:Header><soap:Body><ns3:RegistryResponse xmlns:ns3="urn:oasis:names:tc:ebxml-regrep:xsd:rs:3.0" xmlns:ns2="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0" xmlns:ns4="urn:oasis:names:tc:ebxml-regrep:xsd:lcm:3.0" xmlns:ns5="urn:ihe:iti:xds-b:2007" xmlns:ns6="urn:oasis:names:tc:ebxml-regrep:xsd:query:3.0" status="urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success"/></soap:Body></soap:Envelope>
+--uuid:9d70af7a-1e95-4187-8860-de7c7662ce3c
+Content-Type: application/octet-stream
+Content-Transfer-Encoding: binary
+Content-ID: <49ca80e2-b85e-47d7-96fd-9210ae46d86f>
+
+
+--uuid:9d70af7a-1e95-4187-8860-de7c7662ce3c--

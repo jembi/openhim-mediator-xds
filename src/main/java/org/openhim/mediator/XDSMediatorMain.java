@@ -96,7 +96,10 @@ public class XDSMediatorMain {
         MediatorConfig config = loadConfig();
         final MediatorServer server = new MediatorServer(system, config);
 
-        if (config.getProperty("ihe.secure").equalsIgnoreCase("true")) {
+        if (config.getProperty("pix.secure").equalsIgnoreCase("true")
+                || config.getProperty("xds.registry.secure").equalsIgnoreCase("true")
+                || config.getProperty("xds.repository.secure").equalsIgnoreCase("true")
+                || config.getProperty("atna.secure").equalsIgnoreCase("true")) {
             loadSSLConfig(system, config);
         }
 

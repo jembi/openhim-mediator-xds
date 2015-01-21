@@ -99,7 +99,7 @@ public class PIXRequestActor extends UntypedActor {
             String pixQuery = constructPIXQuery(correlationId, msg);
             originalRequests.put(correlationId, msg);
 
-            boolean secure = config.getProperty("ihe.secure").equalsIgnoreCase("true");
+            boolean secure = config.getProperty("pix.secure").equalsIgnoreCase("true");
             int port;
             if (secure) {
                 port = Integer.parseInt(config.getProperty("pix.manager.securePort"));

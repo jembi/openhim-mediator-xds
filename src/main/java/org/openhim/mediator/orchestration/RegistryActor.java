@@ -152,7 +152,7 @@ public class RegistryActor extends UntypedActor {
         } else if (msg instanceof MediatorHTTPResponse) { //respond
             log.info("Received response from XDS.b Registry");
             finalizeResponse((MediatorHTTPResponse) msg);
-            sendAuditMessage(ATNAAudit.TYPE.REGISTRY_QUERY_RESPONSE); //audit
+            sendAuditMessage(ATNAAudit.TYPE.REGISTRY_QUERY_ENRICHED); //audit
 
         } else {
             unhandled(msg);

@@ -164,7 +164,7 @@ public class ATNAAuditingActor extends UntypedActor {
     private String buildRegistryPath() {
         return String.format(
                 "%s:%s/%s", config.getProperty("xds.registry.host"),
-                ((config.getProperty("ihe.secure").equalsIgnoreCase("true")) ?
+                ((config.getProperty("xds.registry.secure").equalsIgnoreCase("true")) ?
                         config.getProperty("xds.registry.securePort") : config.getProperty("xds.registry.port")),
                 config.getProperty("xds.registry.path")
         );
@@ -282,11 +282,11 @@ public class ATNAAuditingActor extends UntypedActor {
                 return generateForPIXRequest(audit);
             case REGISTRY_QUERY_RECEIVED:
                 return generateForRegistryQueryReceived(audit);
-            case REGISTRY_QUERY_RESPONSE:
+            case REGISTRY_QUERY_ENRICHED:
                 return generateForRegistryQueryResponse(audit);
             case PROVIDE_AND_REGISTER_RECEIVED:
                 return generateForPNRReceived(audit);
-            case PROVIDE_AND_REGISTER_RESPONSE:
+            case PROVIDE_AND_REGISTER_ENRICHED:
                 return generateForPNRResponse(audit);
         }
 

@@ -363,7 +363,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
             } catch (JAXBException ex) {
                 originalRequest.getRequestHandler().tell(new ExceptError(ex), getSelf());
             } finally {
-                sendAuditMessage(ATNAAudit.TYPE.PROVIDE_AND_REGISTER_RESPONSE);
+                sendAuditMessage(ATNAAudit.TYPE.PROVIDE_AND_REGISTER_ENRICHED);
                 return true;
             }
         }

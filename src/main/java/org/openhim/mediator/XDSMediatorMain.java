@@ -66,22 +66,18 @@ public class XDSMediatorMain {
         return config;
     }
 
-    private static void loadSSLConfig(ActorSystem system, MediatorConfig config) {
+    private static void loadSSLConfig(MediatorConfig config) {
         System.setProperty("javax.net.ssl.keyStore", config.getProperty("ihe.keystore"));
         System.setProperty("javax.net.ssl.keyStorePassword", config.getProperty("ihe.keypassword"));
         System.setProperty("javax.net.ssl.trustStore", config.getProperty("ihe.keystore"));
         System.setProperty("javax.net.ssl.trustStorePassword", config.getProperty("ihe.storepassword"));
+    }
 
-        ActorSelection httpConnector = system.actorSelection(config.userPathFor("http-connector"));
-        httpConnector.tell(
-                new SetupHTTPSCertificate(
-                        config.getProperty("ihe.keystore"),
-                        config.getProperty("ihe.keypassword"),
-                        config.getProperty("ihe.keystore"),
-                        true
-                ),
-                ActorRef.noSender()
-        );
+    private static boolean isSecure(MediatorConfig config) {
+        return  (config.getProperty("pix.secure").equalsIgnoreCase("true")
+                || config.getProperty("xds.registry.secure").equalsIgnoreCase("true")
+                || config.getProperty("xds.repository.secure").equalsIgnoreCase("true")
+                || config.getProperty("atna.secure").equalsIgnoreCase("true"));
     }
 
     public static void main(String... args) throws Exception {
@@ -96,11 +92,8 @@ public class XDSMediatorMain {
         MediatorConfig config = loadConfig();
         final MediatorServer server = new MediatorServer(system, config);
 
-        if (config.getProperty("pix.secure").equalsIgnoreCase("true")
-                || config.getProperty("xds.registry.secure").equalsIgnoreCase("true")
-                || config.getProperty("xds.repository.secure").equalsIgnoreCase("true")
-                || config.getProperty("atna.secure").equalsIgnoreCase("true")) {
-            loadSSLConfig(system, config);
+        if (isSecure(config)) {
+            loadSSLConfig(config);
         }
 
         //setup shutdown hook
@@ -115,6 +108,21 @@ public class XDSMediatorMain {
 
         log.info("Starting HTTP server...");
         server.start();
+
+
+        //notify http-connector about the ihe cert
+        if (isSecure(config)) {
+            ActorSelection httpConnector = system.actorSelection(config.userPathFor("http-connector"));
+            httpConnector.tell(
+                    new SetupHTTPSCertificate(
+                            config.getProperty("ihe.keystore"),
+                            config.getProperty("ihe.keypassword"),
+                            config.getProperty("ihe.keystore"),
+                            true
+                    ),
+                    ActorRef.noSender()
+            );
+        }
 
         log.info(String.format("%s listening on %s:%s", config.getName(), config.getServerHost(), config.getServerPort()));
         while (true) {

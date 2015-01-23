@@ -53,4 +53,8 @@ keystore.jks - A java keystore file in JKS format containing your certificate
    keytool -importkeystore -srckeystore cert.p12 -destkeystore keystore.jks \
       -srcstoretype PKCS12 -deststoreType JKS -srcstorepass pw \
       -deststorepass pw
-      
+
+####
+# Note: This keystore has also been updated to trust the default openhim self
+# signed cert.
+####

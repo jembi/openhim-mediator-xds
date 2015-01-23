@@ -34,13 +34,13 @@ public class ATNAUtil {
 
 	
 	public static String build_TCP_Msg_header() {
-		StringBuilder res = new StringBuilder("<13>1 ");
-		res.append(now() + " ");
-		res.append(getSystemName() + " ");
-		res.append(getProcessName() + " ");
-		res.append(getProcessID() + " ");
-		res.append("- ");
-		res.append("- ");
+		StringBuilder res = new StringBuilder("<85>1 ");	// PRI and VERSION
+		res.append(now() + " ");							// TIMESTAMP
+		res.append(getSystemName() + " ");					// HOSTNAME
+		res.append(getProcessName() + " ");					// APP-NAME
+		res.append(getProcessID() + " ");					// PROCID
+		res.append("IHE+RFC-3881 ");						// MSGID
+		res.append("- ");									// STRUCTURED-DATA
 		return res.toString();
 	}
 	

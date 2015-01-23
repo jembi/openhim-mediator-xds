@@ -98,7 +98,7 @@ public class ATNAAuditingActor extends UntypedActor {
         eid.setEventActionCode("E");
         eid.setEventDateTime( ATNAUtil.newXMLGregorianCalendar() );
         eid.getEventTypeCode().add( ATNAUtil.buildCodedValueType("IHE Transactions", "ITI-18", "Registry Stored Query") );
-        eid.setEventOutcomeIndicator(audit.getOutcome() ? BigInteger.ONE : BigInteger.ZERO);
+        eid.setEventOutcomeIndicator(!audit.getOutcome() ? BigInteger.ZERO : new BigInteger("4"));
         res.setEventIdentification(eid);
 
         res.getActiveParticipant().add( ATNAUtil.buildActiveParticipant(ATNAUtil.WSA_REPLYTO_ANON, "client", true, audit.getSourceIP(), (short)2, "DCM", "110153", "Source"));
@@ -106,11 +106,11 @@ public class ATNAAuditingActor extends UntypedActor {
 
         res.getAuditSourceIdentification().add(ATNAUtil.buildAuditSource("openhim"));
 
-        for (Identifier id : audit.getParticipantIdentifiers()) {
-            res.getParticipantObjectIdentification().add(
-                    ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
-            );
-        }
+        // Max of 1 patient is allowed
+        Identifier id = audit.getParticipantIdentifiers().get(0);
+        res.getParticipantObjectIdentification().add(
+                ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
+        );
 
         List<ATNAUtil.ParticipantObjectDetail> pod = new ArrayList<>();
         pod.add(new ATNAUtil.ParticipantObjectDetail("QueryEncoding", "UTF-8".getBytes()));
@@ -133,7 +133,7 @@ public class ATNAAuditingActor extends UntypedActor {
         eid.setEventActionCode("E");
         eid.setEventDateTime( ATNAUtil.newXMLGregorianCalendar() );
         eid.getEventTypeCode().add( ATNAUtil.buildCodedValueType("IHE Transactions", "ITI-18", "Registry Stored Query") );
-        eid.setEventOutcomeIndicator(audit.getOutcome() ? BigInteger.ONE : BigInteger.ZERO);
+        eid.setEventOutcomeIndicator(!audit.getOutcome() ? BigInteger.ZERO : new BigInteger("4"));
         res.setEventIdentification(eid);
 
         String xdsRegistryHost = config.getProperty("xds.registry.host");
@@ -142,11 +142,11 @@ public class ATNAAuditingActor extends UntypedActor {
 
         res.getAuditSourceIdentification().add(ATNAUtil.buildAuditSource("openhim"));
 
-        for (Identifier id : audit.getParticipantIdentifiers()) {
-            res.getParticipantObjectIdentification().add(
-                    ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
-            );
-        }
+        // Max of 1 patient is allowed
+        Identifier id = audit.getParticipantIdentifiers().get(0);
+        res.getParticipantObjectIdentification().add(
+                ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
+        );
 
         List<ATNAUtil.ParticipantObjectDetail> pod = new ArrayList<>();
         pod.add(new ATNAUtil.ParticipantObjectDetail("QueryEncoding", "UTF-8".getBytes()));
@@ -178,7 +178,7 @@ public class ATNAAuditingActor extends UntypedActor {
         eid.setEventActionCode("C");
         eid.setEventDateTime( ATNAUtil.newXMLGregorianCalendar() );
         eid.getEventTypeCode().add( ATNAUtil.buildCodedValueType("IHE Transactions", "ITI-41", "Provide and Register Document Set-b") );
-        eid.setEventOutcomeIndicator(audit.getOutcome() ? BigInteger.ONE : BigInteger.ZERO);
+        eid.setEventOutcomeIndicator(!audit.getOutcome() ? BigInteger.ZERO : new BigInteger("4"));
         res.setEventIdentification(eid);
 
         res.getActiveParticipant().add( ATNAUtil.buildActiveParticipant(ATNAUtil.WSA_REPLYTO_ANON, "client", true, audit.getSourceIP(), (short)2, "DCM", "110153", "Source"));
@@ -186,11 +186,11 @@ public class ATNAAuditingActor extends UntypedActor {
 
         res.getAuditSourceIdentification().add(ATNAUtil.buildAuditSource("openhim"));
 
-        for (Identifier id : audit.getParticipantIdentifiers()) {
-            res.getParticipantObjectIdentification().add(
-                    ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
-            );
-        }
+        // Only one is allowed
+        Identifier id = audit.getParticipantIdentifiers().get(0);
+        res.getParticipantObjectIdentification().add(
+                ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
+        );
 
         List<ATNAUtil.ParticipantObjectDetail> pod = new ArrayList<>();
         pod.add(new ATNAUtil.ParticipantObjectDetail("QueryEncoding", "UTF-8".getBytes()));
@@ -222,11 +222,12 @@ public class ATNAAuditingActor extends UntypedActor {
 
         res.getAuditSourceIdentification().add(ATNAUtil.buildAuditSource("openhim"));
 
-        for (Identifier id : audit.getParticipantIdentifiers()) {
-            res.getParticipantObjectIdentification().add(
-                    ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
-            );
-        }
+        // Only one is allowed
+        Identifier id = audit.getParticipantIdentifiers().get(0);
+        res.getParticipantObjectIdentification().add(
+                ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
+        );
+
         res.getParticipantObjectIdentification().add(
                 ATNAUtil.buildParticipantObjectIdentificationType(
                         audit.getUniqueId(), (short)2, (short)20, "IHE XDS Metadata",
@@ -300,16 +301,17 @@ public class ATNAAuditingActor extends UntypedActor {
         String message = generateMesage(audit);
 
         message = ATNAUtil.build_TCP_Msg_header() + message;
-        message = message.length() + " " + message + "\r\n";
         boolean useTCP;
         int port;
 
         if (config.getProperty("atna.useTcp").equalsIgnoreCase("true")) {
             port = Integer.parseInt(config.getProperty("atna.tcpPort"));
             useTCP = true;
+            message = message.length() + " " + message; // Required by RFC5425
         } else {
             port = Integer.parseInt(config.getProperty("atna.udpPort"));
             useTCP = false;
+            message = message + "\r\n"; // to make OpenATNA happy
         }
 
         MediatorSocketRequest request = new MediatorSocketRequest(

@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/jembi/openhim-mediator-xds.svg)](https://travis-ci.org/jembi/openhim-mediator-xds)
+
 openhim-mediator-xds
 ====================
 

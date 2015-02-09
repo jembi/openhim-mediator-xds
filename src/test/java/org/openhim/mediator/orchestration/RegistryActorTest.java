@@ -150,6 +150,22 @@ public class RegistryActorTest {
         }};
     }
 
+    @Test
+    public void testIsAdhocQuery() throws Exception {
+        new JavaTestKit(system) {{
+            TestActorRef<RegistryActor> actor = TestActorRef.create(system, Props.create(RegistryActor.class, testConfig));
+
+            InputStream in = getClass().getClassLoader().getResourceAsStream("adhocQueryRequest_wSOAP.xml");
+            String msg = IOUtils.toString(in);
+            assertTrue(actor.underlyingActor().isAdhocQuery(msg));
+
+            InputStream in2 = getClass().getClassLoader().getResourceAsStream("pnr1.xml");
+            String msg2 = IOUtils.toString(in2);
+            assertFalse(actor.underlyingActor().isAdhocQuery(msg2));
+
+            assertFalse(actor.underlyingActor().isAdhocQuery("random stuff"));
+        }};
+    }
 
     public static String trimXML(String xml) {
         return xml.replace("\n", "").replaceAll(">\\s*<", "><");

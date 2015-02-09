@@ -55,25 +55,37 @@ public class RegistryActor extends UntypedActor {
     }
 
 
-    private boolean isAdhocQuery(String msg) {
-        return msg.contains("AdhocQueryRequest");
+    protected boolean isAdhocQuery(String msg) throws ParserConfigurationException, IOException, XPathExpressionException {
+        try {
+            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            Document doc = builder.parse(IOUtils.toInputStream(msg));
+            XPath xpath = XPathFactory.newInstance().newXPath();
+            String pathResult = xpath.compile("//AdhocQueryRequest[1]").evaluate(doc);
+            return pathResult != null && !pathResult.isEmpty();
+        } catch (SAXException ex) {
+            return false;
+        }
     }
 
     private void parseMessage(MediatorHTTPRequest request) {
-        requestHandler = request.getRequestHandler();
-        xForwardedFor = request.getHeaders().get("X-Forwarded-For");
+        try {
+            requestHandler = request.getRequestHandler();
+            xForwardedFor = request.getHeaders().get("X-Forwarded-For");
 
-        //get request body
-        messageBuffer = request.getBody();
+            //get request body
+            messageBuffer = request.getBody();
 
-        isStoredQuery = isAdhocQuery(request.getBody());
-        if (isStoredQuery) {
-            log.info("Parsing registry stored query request...");
-            ActorSelection parseActor = getContext().actorSelection(config.userPathFor("parse-registry-stored-query"));
-            parseActor.tell(new SimpleMediatorRequest<>(request.getRequestHandler(), getSelf(), messageBuffer), getSelf());
-        } else {
-            log.info("Forwarding request to registry...");
-            forwardToRegistry();
+            isStoredQuery = isAdhocQuery(request.getBody());
+            if (isStoredQuery) {
+                log.info("Parsing registry stored query request...");
+                ActorSelection parseActor = getContext().actorSelection(config.userPathFor("parse-registry-stored-query"));
+                parseActor.tell(new SimpleMediatorRequest<>(request.getRequestHandler(), getSelf(), messageBuffer), getSelf());
+            } else {
+                log.info("Forwarding request to registry...");
+                forwardToRegistry();
+            }
+        } catch (ParserConfigurationException | IOException | XPathExpressionException ex) {
+            request.getRequestHandler().tell(new ExceptError(ex), getSelf());
         }
     }
 

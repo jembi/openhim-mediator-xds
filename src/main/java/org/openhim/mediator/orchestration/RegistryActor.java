@@ -90,8 +90,8 @@ public class RegistryActor extends UntypedActor {
     }
 
     private void lookupEnterpriseIdentifier() {
-        String enterpriseIdentifierAuthority = config.getProperty("pix.requestedAssigningAuthority");
-        String enterpriseIdentifierAuthorityId = config.getProperty("pix.requestedAssigningAuthorityId");
+        String enterpriseIdentifierAuthority = config.getProperty("client.requestedAssigningAuthority");
+        String enterpriseIdentifierAuthorityId = config.getProperty("client.requestedAssigningAuthorityId");
         AssigningAuthority authority = new AssigningAuthority(enterpriseIdentifierAuthority, enterpriseIdentifierAuthorityId);
         ResolvePatientIdentifier msg = new ResolvePatientIdentifier(requestHandler, getSelf(), patientIdBuffer, authority);
         resolvePatientIDActor.tell(msg, getSelf());

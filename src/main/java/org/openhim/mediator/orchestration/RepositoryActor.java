@@ -66,6 +66,7 @@ public class RepositoryActor extends UntypedActor {
         contentType = originalRequest.getHeaders().get("Content-Type");
 
         if (contentType!=null && contentType.contains("multipart/related")) {
+            log.info("Message is multipart. Parsing contents...");
             XDSbMimeProcessorActor.MimeMessage mimeMsg = new XDSbMimeProcessorActor.MimeMessage(originalRequest.getRequestHandler(), getSelf(), originalRequest.getBody(), contentType);
             mtomProcessor.tell(mimeMsg, getSelf());
             messageIsMTOM = true;
@@ -78,6 +79,7 @@ public class RepositoryActor extends UntypedActor {
 
     private void processMtomProcessorResponse(XDSbMimeProcessorActor.XDSbMimeProcessorResponse msg) {
         if (msg.getOriginalRequest() instanceof XDSbMimeProcessorActor.MimeMessage) {
+            log.info("Successfully parsed multipart contents");
             messageBuffer = msg.getResponseObject();
             triggerRepositoryAction();
         } else if (msg.getOriginalRequest() instanceof XDSbMimeProcessorActor.EnrichedMessage) {
@@ -101,6 +103,9 @@ public class RepositoryActor extends UntypedActor {
                     return false;
                 }
             }
+
+            action = action.trim();
+            log.info("Action: " + action);
             return true;
         } catch (ParserConfigurationException | SAXException | XPathExpressionException | IOException ex) {
             originalRequest.getRequestHandler().tell(new ExceptError(ex), getSelf());
@@ -183,6 +188,7 @@ public class RepositoryActor extends UntypedActor {
     }
 
     private void forwardRequestToRepository() {
+        log.info("Forwarding request to repository");
         ActorSelection httpConnector = getContext().actorSelection(config.userPathFor("http-connector"));
 
         // Copy original content type

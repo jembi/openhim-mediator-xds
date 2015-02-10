@@ -29,6 +29,10 @@ public class AdhocQueryE2ETest extends E2EBase {
 
     protected static class AdhocQueryPIXServer extends MockPIXServer {
 
+        public AdhocQueryPIXServer(int port) {
+            super(port);
+        }
+
         @Override
         String getResponse() {
             InputStream in = getClass().getClassLoader().getResourceAsStream("pixResponse-ECID1.er7");
@@ -60,7 +64,7 @@ public class AdhocQueryE2ETest extends E2EBase {
     @Override
     public void before() throws RoutingTable.RouteAlreadyMappedException, IOException {
         super.before();
-        pixServer = new AdhocQueryPIXServer();
+        pixServer = new AdhocQueryPIXServer(Integer.parseInt(testConfig.getProperty("pix.manager.port")));
         pixServer.start();
         stubRegistry();
     }

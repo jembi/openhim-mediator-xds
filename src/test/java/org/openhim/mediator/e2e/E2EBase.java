@@ -48,11 +48,11 @@ import static org.junit.Assert.*;
 public class E2EBase {
     protected static abstract class MockPIXServer extends Thread {
         ServerSocket socket;
-        boolean called = false;
+        int called = 0;
 
-        public MockPIXServer() {
+        public MockPIXServer(int port) {
             try {
-                socket = new ServerSocket(8511);
+                socket = new ServerSocket(port);
             } catch (IOException e) {
                 e.printStackTrace();
                 fail();
@@ -67,37 +67,52 @@ public class E2EBase {
         abstract void onReceive(String receivedMessage);
 
         public void verifyCalled() {
-            assertTrue(called);
+            assertTrue(called>0);
+        }
+
+        public void verifyCalled(int numTimesCalled) {
+            assertTrue(called == numTimesCalled);
         }
 
         @Override
         public void run() {
             try {
-                //we'll just handle one connection, so no while loop
-                Socket conn = socket.accept();
-
-                ByteArrayOutputStream buffer = new ByteArrayOutputStream(1024*1024);
-                InputStream in = conn.getInputStream();
-                int lastByte = -1;
-                int lastLastByte;
+                called = 0;
                 do {
-                    lastLastByte = lastByte;
-                    lastByte = in.read();
-                    if (lastByte!=-1) {
-                        buffer.write(lastByte);
-                    }
-                } while (lastByte!=-1 && lastLastByte!= MLLPConnector.MLLP_FOOTER_FS && lastByte!=MLLPConnector.MLLP_FOOTER_CR);
+                    final Socket conn = socket.accept();
 
-                String receivedMessage = buffer.toString();
-                onReceive(receivedMessage);
+                    (new Thread() {
+                        @Override
+                        public void run() {
+                            try {
+                                ByteArrayOutputStream buffer = new ByteArrayOutputStream(1024 * 1024);
+                                InputStream in = conn.getInputStream();
+                                int lastByte = -1;
+                                int lastLastByte;
+                                do {
+                                    lastLastByte = lastByte;
+                                    lastByte = in.read();
+                                    if (lastByte != -1) {
+                                        buffer.write(lastByte);
+                                    }
+                                }
+                                while (lastByte != -1 && lastLastByte != MLLPConnector.MLLP_FOOTER_FS && lastByte != MLLPConnector.MLLP_FOOTER_CR);
 
-                conn.getOutputStream().write(MLLPConnector.wrapMLLP(getResponse()).getBytes());
-                conn.close();
+                                String receivedMessage = buffer.toString();
+                                onReceive(receivedMessage);
 
-                called = true;
+                                conn.getOutputStream().write(MLLPConnector.wrapMLLP(getResponse()).getBytes());
+
+                            } catch (IOException e) {
+                                System.out.println("Warning: " + e.getMessage());
+                            }
+                        }
+                    }).start();
+
+                    called++;
+                } while (!socket.isClosed());
             } catch (IOException e) {
-                e.printStackTrace();
-                fail();
+                System.out.println("Warning: " + e.getMessage());
             }
         }
     }

@@ -73,7 +73,7 @@
   <dependency>
     <groupId>org.openhim</groupId>
     <artifactId>mediator-engine</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
   </dependency>
   <dependency>
     <groupId>ca.uhn.hapi</groupId>
@@ -106,6 +106,12 @@
     <groupId>com.typesafe.akka</groupId>
     <artifactId>akka-testkit_2.10</artifactId>
     <version>2.3.7</version>
+    <scope>test</scope>
+  </dependency>
+  <dependency>
+    <groupId>com.github.tomakehurst</groupId>
+    <artifactId>wiremock</artifactId>
+    <version>1.52</version>
     <scope>test</scope>
   </dependency>
 </dependencies>

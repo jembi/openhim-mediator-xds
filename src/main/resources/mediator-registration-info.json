@@ -1,6 +1,6 @@
 {
   "urn": "urn:mediator:xds",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "name": "OpenHIE XDS.b Mediator",
   "description": "An XDS.b mediator for OpenHIE integration",
   "endpoints": [
@@ -13,14 +13,14 @@
   ],
   "defaultChannelConfig": [
     {
-      "name": "XDS.b Repository",
+      "name": "XDS.b Mediator",
       "urlPattern": "^/xds(registry|repository)$",
       "type": "http",
       "allow": ["xds"],
       "routes": [
         {
           "name": "XDS.b Mediator",
-          "host": "192.168.1.92",
+          "host": "localhost",
           "port": "8500",
           "type": "http",
           "primary": "true"

@@ -112,6 +112,11 @@ public class RegistryActor extends UntypedActor {
         }
     }
 
+    private boolean isAdhocQuerySuccessful(MediatorHTTPResponse response) {
+        return response.getStatusCode()>200 && response.getStatusCode()<=299 &&
+                response.getBody().contains("status=\"urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success\"");
+    }
+
     private void forwardToRegistry() {
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/soap+xml");
@@ -140,15 +145,14 @@ public class RegistryActor extends UntypedActor {
         requestHandler.tell(response.toFinishRequest(), getSelf());
     }
 
-    private void sendAuditMessage(ATNAAudit.TYPE type) {
+    private void sendAuditMessage(ATNAAudit.TYPE type, boolean outcome) {
         try {
             ATNAAudit audit = new ATNAAudit(type);
             audit.setMessage(messageBuffer);
 
             audit.setParticipantIdentifiers(Collections.singletonList(patientIdBuffer));
             audit.setUniqueId("NotParsed");
-            //TODO failed outcome
-            audit.setOutcome(true);
+            audit.setOutcome(outcome);
             audit.setSourceIP(xForwardedFor);
 
             getContext().actorSelection(config.userPathFor("atna-auditing")).tell(audit, getSelf());
@@ -168,7 +172,7 @@ public class RegistryActor extends UntypedActor {
             patientIdBuffer = ((ParsedRegistryStoredQuery) msg).getPatientId();
             lookupEnterpriseIdentifier();
 
-            sendAuditMessage(ATNAAudit.TYPE.REGISTRY_QUERY_RECEIVED); //audit
+            sendAuditMessage(ATNAAudit.TYPE.REGISTRY_QUERY_RECEIVED, true); //audit
 
         } else if (msg instanceof ResolvePatientIdentifierResponse) { //enrich message
             enrichEnterpriseIdentifier((ResolvePatientIdentifierResponse) msg);
@@ -182,7 +186,8 @@ public class RegistryActor extends UntypedActor {
             log.info("Received response from XDS.b Registry");
             finalizeResponse((MediatorHTTPResponse) msg);
             if (isStoredQuery) {
-                sendAuditMessage(ATNAAudit.TYPE.REGISTRY_QUERY_ENRICHED); //audit
+                boolean outcome = isAdhocQuerySuccessful((MediatorHTTPResponse) msg);
+                sendAuditMessage(ATNAAudit.TYPE.REGISTRY_QUERY_ENRICHED, outcome); //audit
             }
 
         } else {

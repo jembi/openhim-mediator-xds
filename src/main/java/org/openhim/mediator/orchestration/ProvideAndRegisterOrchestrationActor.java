@@ -151,6 +151,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
     private void processParsedRequest(ProvideAndRegisterDocumentSetRequestType doc) {
         log.info("Request parsed. Processing document");
         parsedRequest = doc;
+        boolean outcome = true;
         try {
             initIdentifiersToBeResolvedMappings();
             if (!checkAndRespondIfAllResolved()) {
@@ -159,8 +160,9 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         } catch (ValidationException ex) {
             FinishRequest fr = new FinishRequest(ex.getMessage(), "text/plain", HttpStatus.SC_BAD_REQUEST);
             originalRequest.getRequestHandler().tell(fr, getSelf());
+            outcome = false;
         } finally {
-            sendAuditMessage(ATNAAudit.TYPE.PROVIDE_AND_REGISTER_RECEIVED);
+            sendAuditMessage(ATNAAudit.TYPE.PROVIDE_AND_REGISTER_RECEIVED, outcome);
         }
     }
 
@@ -352,18 +354,21 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
 
     private boolean checkAndRespondIfAllResolved() {
         if (areAllIdentifiersResolved()) {
+            boolean outcome = false;
             try {
                 String errors = getResolveIdentifierErrors();
 
                 if (errors==null) {
                     respondSuccess();
+                    outcome = true;
                 } else {
                     respondBadRequest(errors);
+                    outcome = false;
                 }
             } catch (JAXBException ex) {
                 originalRequest.getRequestHandler().tell(new ExceptError(ex), getSelf());
             } finally {
-                sendAuditMessage(ATNAAudit.TYPE.PROVIDE_AND_REGISTER_ENRICHED);
+                sendAuditMessage(ATNAAudit.TYPE.PROVIDE_AND_REGISTER_ENRICHED, outcome);
                 return true;
             }
         }
@@ -452,7 +457,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         return result;
     }
 
-    private void sendAuditMessage(ATNAAudit.TYPE type) {
+    private void sendAuditMessage(ATNAAudit.TYPE type, boolean outcome) {
         try {
             ATNAAudit audit = new ATNAAudit(type);
             audit.setMessage(messageBuffer);
@@ -466,8 +471,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
             RegistryPackageType regPac = InfosetUtil.getRegistryPackage(parsedRequest.getSubmitObjectsRequest(), XDSConstants.UUID_XDSSubmissionSet);
             String uniqueId = InfosetUtil.getExternalIdentifierValue(XDSConstants.UUID_XDSSubmissionSet_uniqueId, regPac);
             audit.setUniqueId(uniqueId);
-            //TODO failed outcome
-            audit.setOutcome(true);
+            audit.setOutcome(outcome);
             audit.setSourceIP(xForwardedFor);
 
             getContext().actorSelection(config.userPathFor("atna-auditing")).tell(audit, getSelf());

@@ -37,9 +37,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -117,11 +115,119 @@ public class E2EBase {
         }
     }
 
+    protected static class MockATNAServer extends Thread {
+        ServerSocket socket;
+        List<String> calledFor = Collections.synchronizedList(new LinkedList<String>());
+        Integer activeConnections = 0;
+
+        public MockATNAServer(int port) {
+            try {
+                socket = new ServerSocket(port);
+            } catch (IOException e) {
+                e.printStackTrace();
+                fail();
+            }
+        }
+
+        public void kill() {
+            IOUtils.closeQuietly(socket);
+        }
+
+        public void verifyCalled() {
+            waitOnActiveConnections(null);
+            assertTrue(calledFor.size()>0);
+        }
+
+        public void verifyCalled(int numTimesCalled) {
+            waitOnActiveConnections(numTimesCalled);
+            assertTrue(calledFor.size() == numTimesCalled);
+        }
+
+        public void verifyCalledFor(String eventType) {
+            waitOnActiveConnections(null);
+            for (String ev : calledFor) {
+                if (ev.equals(eventType)) {
+                    return;
+                }
+            }
+            fail("ATNA audit should be sent for event " + eventType);
+        }
+
+        private void waitOnActiveConnections(Integer expectedNumCalls) {
+            int tries = 0;
+            while ((activeConnections > 0 //are there active connections?
+                    || (expectedNumCalls!=null && calledFor.size()<expectedNumCalls)) //or maybe they haven't had a chance to run yet?
+                && tries<50) //but don't wait for more than 5 seconds
+            {
+                try {
+                    Thread.sleep(100);
+
+                    tries++;
+                } catch (InterruptedException e) {}
+            }
+        }
+
+        private void alive() {
+            synchronized (activeConnections) {
+                activeConnections++;
+            }
+        }
+
+        private void dead() {
+            synchronized (activeConnections) {
+                activeConnections--;
+            }
+        }
+
+        @Override
+        public void run() {
+            try {
+                calledFor.clear();
+                do {
+                    final Socket conn = socket.accept();
+
+                    (new Thread() {
+                        @Override
+                        public void run() {
+                            try {
+                                alive();
+                                String message = IOUtils.toString(conn.getInputStream());
+
+                                int startI = message.indexOf("EventTypeCode code=\"");
+                                if (startI==-1) {
+                                    fail("Unparseable ATNA audit received");
+                                    return;
+                                }
+
+                                message = message.substring(startI + "EventTypeCode code=\"".length());
+                                int endI = message.indexOf("\"");
+                                if (endI==-1) {
+                                    fail("Unparseable ATNA audit received");
+                                    return;
+                                }
+
+                                message = message.substring(0, endI);
+                                calledFor.add(message);
+                            } catch (IOException e) {
+                                System.out.println("Warning: " + e.getMessage());
+                            } finally {
+                                dead();
+                            }
+                        }
+                    }).start();
+                } while (!socket.isClosed());
+            } catch (IOException e) {
+                System.out.println("Warning: " + e.getMessage());
+            }
+        }
+    }
+
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(8520);
 
     protected MediatorConfig testConfig;
     protected MediatorServer server;
+    protected MockATNAServer atnaServer;
 
 
     private void loadTestConfig() throws RoutingTable.RouteAlreadyMappedException, IOException {
@@ -157,12 +263,15 @@ public class E2EBase {
     @Before
     public void before() throws RoutingTable.RouteAlreadyMappedException, IOException {
         loadTestConfig();
+        atnaServer = new MockATNAServer(Integer.parseInt(testConfig.getProperty("atna.tcpPort")));
+        atnaServer.start();
         server = new MediatorServer(testConfig);
         server.start(false);
     }
 
     @After
     public void after() {
+        atnaServer.kill();
         server.stop();
     }
 

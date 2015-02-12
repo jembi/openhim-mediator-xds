@@ -44,6 +44,11 @@ public class ProvideAndRegisterDocumentSetE2ETest extends ProvideAndRegisterDocu
         assertEquals(new Integer(201), response.status);
 
         pixServer.verifyCalled(2);
+
+        atnaServer.verifyCalled(4);
+        atnaServer.verifyCalledFor("ITI-41");
+        atnaServer.verifyCalledFor("ITI-9");
+
         verify(
                 postRequestedFor(urlEqualTo("/openmrs-standalone/ms/xdsrepository"))
                         .withHeader("Content-Type", equalTo("application/soap+xml"))

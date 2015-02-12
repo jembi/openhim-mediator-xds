@@ -87,6 +87,11 @@ public class AdhocQueryE2ETest extends E2EBase {
         assertEquals(new Integer(201), response.status);
 
         pixServer.verifyCalled();
+
+        atnaServer.verifyCalled(3);
+        atnaServer.verifyCalledFor("ITI-18");
+        atnaServer.verifyCalledFor("ITI-9");
+
         verify(
                 postRequestedFor(urlEqualTo("/axis2/services/xdsregistryb"))
                         .withHeader("Content-Type", equalTo("application/soap+xml"))

@@ -54,7 +54,7 @@ public class EnrichRegistryStoredQueryActorTest {
             EnrichRegistryStoredQuery msg = new EnrichRegistryStoredQuery(getRef(), getRef(), testAdhocRequest, id);
             actor.tell(msg, getRef());
 
-            EnrichRegistryStoredQueryResponse response = expectMsgClass(Duration.create(100, TimeUnit.MILLISECONDS), EnrichRegistryStoredQueryResponse.class);
+            EnrichRegistryStoredQueryResponse response = expectMsgClass(Duration.create(2000, TimeUnit.MILLISECONDS), EnrichRegistryStoredQueryResponse.class);
             assertEquals(trimXML(expectedAdhocRequest), trimXML(response.getEnrichedMessage()));
         }};
     }

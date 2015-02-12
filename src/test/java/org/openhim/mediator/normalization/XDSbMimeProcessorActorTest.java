@@ -50,7 +50,7 @@ public class XDSbMimeProcessorActorTest {
             XDSbMimeProcessorActor.MimeMessage testMsg = new XDSbMimeProcessorActor.MimeMessage(getRef(), getRef(), testPnRBasicMtom, CONTENT_TYPE);
             actor.tell(testMsg, getRef());
 
-            XDSbMimeProcessorActor.XDSbMimeProcessorResponse result = expectMsgClass(Duration.create(100, TimeUnit.MILLISECONDS), XDSbMimeProcessorActor.XDSbMimeProcessorResponse.class);
+            XDSbMimeProcessorActor.XDSbMimeProcessorResponse result = expectMsgClass(Duration.create(2000, TimeUnit.MILLISECONDS), XDSbMimeProcessorActor.XDSbMimeProcessorResponse.class);
             assertEquals("(Not an actual) SOAP part for testing", result.getResponseObject().trim());
         }};
     }
@@ -67,12 +67,12 @@ public class XDSbMimeProcessorActorTest {
 
             XDSbMimeProcessorActor.MimeMessage testMsg = new XDSbMimeProcessorActor.MimeMessage(getRef(), getRef(), testPnRBasicMtom, CONTENT_TYPE);
             actor.tell(testMsg, getRef());
-            expectMsgClass(Duration.create(100, TimeUnit.MILLISECONDS), XDSbMimeProcessorActor.XDSbMimeProcessorResponse.class);
+            expectMsgClass(Duration.create(2000, TimeUnit.MILLISECONDS), XDSbMimeProcessorActor.XDSbMimeProcessorResponse.class);
 
             XDSbMimeProcessorActor.EnrichedMessage enrichedMessage = new XDSbMimeProcessorActor.EnrichedMessage(getRef(), getRef(), "My test");
             actor.tell(enrichedMessage, getRef());
 
-            XDSbMimeProcessorActor.XDSbMimeProcessorResponse result = expectMsgClass(Duration.create(100, TimeUnit.MILLISECONDS), XDSbMimeProcessorActor.XDSbMimeProcessorResponse.class);
+            XDSbMimeProcessorActor.XDSbMimeProcessorResponse result = expectMsgClass(Duration.create(2000, TimeUnit.MILLISECONDS), XDSbMimeProcessorActor.XDSbMimeProcessorResponse.class);
             assertEquals(testPnRModifiedMtom, result.getResponseObject().replaceAll("\r", ""));
         }};
     }

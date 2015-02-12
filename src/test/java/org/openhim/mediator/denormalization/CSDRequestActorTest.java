@@ -218,7 +218,7 @@ public class CSDRequestActorTest {
                 actor.tell(testMsg, getRef());
 
                 ResolveFacilityIdentifierResponse response = expectMsgClass(
-                        Duration.create(100, TimeUnit.MILLISECONDS),
+                        Duration.create(2000, TimeUnit.MILLISECONDS),
                         ResolveFacilityIdentifierResponse.class
                 );
 
@@ -246,7 +246,7 @@ public class CSDRequestActorTest {
                 actor.tell(testMsg, getRef());
 
                 ResolveHealthcareWorkerIdentifierResponse response = expectMsgClass(
-                        Duration.create(100, TimeUnit.MILLISECONDS),
+                        Duration.create(2000, TimeUnit.MILLISECONDS),
                         ResolveHealthcareWorkerIdentifierResponse.class
                 );
 
@@ -273,7 +273,7 @@ public class CSDRequestActorTest {
                 actor.tell(testMsg, getRef());
 
                 ResolveFacilityIdentifierResponse response = expectMsgClass(
-                        Duration.create(100, TimeUnit.MILLISECONDS),
+                        Duration.create(2000, TimeUnit.MILLISECONDS),
                         ResolveFacilityIdentifierResponse.class
                 );
 
@@ -299,7 +299,7 @@ public class CSDRequestActorTest {
 
                 actor.tell(testMsg, getRef());
 
-                ExceptError response = expectMsgClass(Duration.create(100, TimeUnit.MILLISECONDS),ExceptError.class);
+                ExceptError response = expectMsgClass(Duration.create(2000, TimeUnit.MILLISECONDS),ExceptError.class);
 
                 assertNotNull(response.getError());
             } finally {

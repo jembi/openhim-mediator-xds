@@ -153,6 +153,7 @@ public class E2EBase {
             fail("ATNA audit should be sent for event " + eventType);
         }
 
+        //atna runs asynchronously and will likely be only complete after a request finishes, so we need to wait
         private void waitOnActiveConnections(Integer expectedNumCalls) {
             int tries = 0;
             while ((activeConnections > 0 //are there active connections?

@@ -1,6 +1,6 @@
 {
   "urn": "urn:mediator:xds",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "name": "OpenHIE XDS.b Mediator",
   "description": "An XDS.b mediator for OpenHIE integration",
   "endpoints": [

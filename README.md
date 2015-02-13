@@ -14,6 +14,12 @@ Document enrichment is supported via PIX and CSD requests to any compliant Clien
 ATNA auditing is supported for requests.
 
 # Usage
+* Ensure that a [Java Runtime Environment](http://java.com/en/) is installed on your system. At a minimum Java 7 is required.
+* Download the latest release of the mediator from https://github.com/jembi/openhim-mediator-xds/releases
+* Extract the downloaded archive, e.g. `tar -xzf openhim-mediator-xds-1.0.0.tar.gz`
+* The mediator is packaged as a standalone jar and can be run as follows: `java -jar target/mediator-xds-1.0.0-jar-with-dependencies.jar`
+
+# Compiling and running from source
 * `git clone https://github.com/jembi/openhim-mediator-xds.git`
 * `cd openhim-mediator-xds`
 * `mvn install`

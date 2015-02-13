@@ -49,7 +49,7 @@ public class ParseRegistryStoredQueryActorTest {
 
             actor.tell(new SimpleMediatorRequest<String>(getRef(), getRef(), testAdhocRequest), getRef());
 
-            ParsedRegistryStoredQuery result = expectMsgClass(Duration.create(100, TimeUnit.MILLISECONDS), ParsedRegistryStoredQuery.class);
+            ParsedRegistryStoredQuery result = expectMsgClass(Duration.create(60, TimeUnit.SECONDS), ParsedRegistryStoredQuery.class);
             assertEquals("1234567890", result.getPatientId().getIdentifier());
             assertEquals("TestID", result.getPatientId().getAssigningAuthority().getAssigningAuthority());
             assertEquals("1.2.3", result.getPatientId().getAssigningAuthority().getAssigningAuthorityId());
@@ -65,7 +65,7 @@ public class ParseRegistryStoredQueryActorTest {
 
             actor.tell(new SimpleMediatorRequest<String>(getRef(), getRef(), testAdhocRequest), getRef());
 
-            FinishRequest result = expectMsgClass(Duration.create(100, TimeUnit.MILLISECONDS), FinishRequest.class);
+            FinishRequest result = expectMsgClass(Duration.create(60, TimeUnit.SECONDS), FinishRequest.class);
             assertEquals(new Integer(400), result.getResponseStatus());
         }};
     }

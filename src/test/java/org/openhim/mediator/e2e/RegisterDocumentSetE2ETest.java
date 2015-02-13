@@ -57,6 +57,8 @@ public class RegisterDocumentSetE2ETest extends E2EBase {
         E2EHTTPResponse response = executeHTTPRequest("POST", "/xdsregistry", rds, Collections.singletonMap("Content-Type", "application/soap+xml"), null);
         assertEquals(new Integer(201), response.status);
 
+        atnaServer.verifyCalled(0); //no auditing
+
         verify(
                 postRequestedFor(urlEqualTo("/axis2/services/xdsregistryb"))
                         .withHeader("Content-Type", equalTo("application/soap+xml"))

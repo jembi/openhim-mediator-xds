@@ -11,6 +11,8 @@ import akka.actor.ActorSelection;
 import akka.actor.ActorSystem;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.openhim.mediator.denormalization.ATNAAuditingActor;
 import org.openhim.mediator.denormalization.EnrichRegistryStoredQueryActor;
 import org.openhim.mediator.engine.*;
@@ -19,8 +21,10 @@ import org.openhim.mediator.normalization.ParseRegistryStoredQueryActor;
 import org.openhim.mediator.orchestration.RegistryActor;
 import org.openhim.mediator.orchestration.RepositoryActor;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Properties;
 
 public class XDSMediatorMain {
 
@@ -39,10 +43,20 @@ public class XDSMediatorMain {
         return startupActors;
     }
 
-    private static MediatorConfig loadConfig() throws IOException, RoutingTable.RouteAlreadyMappedException {
+    private static MediatorConfig loadConfig(String configPath) throws IOException, RoutingTable.RouteAlreadyMappedException {
         MediatorConfig config = new MediatorConfig();
 
-        config.setProperties("mediator.properties");
+        if (configPath!=null) {
+            Properties props = new Properties();
+            File conf = new File(configPath);
+            InputStream in = FileUtils.openInputStream(conf);
+            props.load(in);
+            IOUtils.closeQuietly(in);
+
+            config.setProperties(props);
+        } else {
+            config.setProperties("mediator.properties");
+        }
 
         config.setName(config.getProperty("mediator.name"));
         config.setServerHost(config.getProperty("mediator.host"));
@@ -89,7 +103,19 @@ public class XDSMediatorMain {
 
         //setup server
         log.info("Initializing mediator server...");
-        MediatorConfig config = loadConfig();
+
+        String configPath = null;
+        //for now only --conf param is supported... poorly
+        //TODO support custom config for mediator registration info json
+        //TODO better parameter handling
+        if (args.length==2 && args[0].equals("--conf")) {
+            configPath = args[1];
+            log.info("Loading mediator configuration from '" + configPath + "'...");
+        } else {
+            log.info("No configuration specified. Using default properties...");
+        }
+
+        MediatorConfig config = loadConfig(configPath);
         final MediatorServer server = new MediatorServer(system, config);
 
         if (isSecure(config)) {

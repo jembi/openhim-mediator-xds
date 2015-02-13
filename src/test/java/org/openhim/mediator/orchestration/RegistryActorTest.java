@@ -121,7 +121,7 @@ public class RegistryActorTest {
 
             actor.tell(buildTestAdhocQueryRequest(getRef()), getRef());
 
-            FinishRequest response = expectMsgClass(Duration.create(2, TimeUnit.SECONDS), FinishRequest.class);
+            FinishRequest response = expectMsgClass(Duration.create(60, TimeUnit.SECONDS), FinishRequest.class);
 
             assertEquals(new Integer(200), response.getResponseStatus());
             InputStream rIn = getClass().getClassLoader().getResourceAsStream("adhocQueryResponse_wSOAP.xml");
@@ -144,7 +144,7 @@ public class RegistryActorTest {
 
             actor.tell(buildTestAdhocQueryRequest(getRef()), getRef());
 
-            FinishRequest response = expectMsgClass(Duration.create(2, TimeUnit.SECONDS), FinishRequest.class);
+            FinishRequest response = expectMsgClass(Duration.create(60, TimeUnit.SECONDS), FinishRequest.class);
 
             assertEquals("Expected 404 if patient resolve failed", new Integer(404), response.getResponseStatus());
         }};

@@ -158,7 +158,7 @@ public class E2EBase {
             int tries = 0;
             while ((activeConnections > 0 //are there active connections?
                     || (expectedNumCalls!=null && calledFor.size()<expectedNumCalls)) //or maybe they haven't had a chance to run yet?
-                && tries<50) //but don't wait for more than 5 seconds
+                && tries<600) //but don't wait for more than 60 seconds (600*100ms)
             {
                 try {
                     Thread.sleep(100);

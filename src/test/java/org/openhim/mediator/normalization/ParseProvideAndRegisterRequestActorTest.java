@@ -50,7 +50,7 @@ public class ParseProvideAndRegisterRequestActorTest {
             SimpleMediatorRequest<String> testMsg = new SimpleMediatorRequest<String>(getRef(), getRef(), testPnR);
             actor.tell(testMsg, getRef());
 
-            SimpleMediatorResponse result = expectMsgClass(Duration.create(5000, TimeUnit.MILLISECONDS), SimpleMediatorResponse.class);
+            SimpleMediatorResponse result = expectMsgClass(Duration.create(60, TimeUnit.SECONDS), SimpleMediatorResponse.class);
             assertTrue(SimpleMediatorResponse.isInstanceOf(ProvideAndRegisterDocumentSetRequestType.class, result));
         }};
     }

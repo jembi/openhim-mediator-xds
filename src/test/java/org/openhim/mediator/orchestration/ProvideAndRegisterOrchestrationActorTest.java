@@ -44,7 +44,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
     ActorRef resolvePIDDummy;
     ActorRef resolveHWIDDummy;
     ActorRef resolveFIDDummy;
-    final FiniteDuration waitTime = Duration.create(5, TimeUnit.SECONDS);
+    final FiniteDuration waitTime = Duration.create(60, TimeUnit.SECONDS);
 
 
     @BeforeClass

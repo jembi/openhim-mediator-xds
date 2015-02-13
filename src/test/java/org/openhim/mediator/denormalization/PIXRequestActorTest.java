@@ -110,7 +110,7 @@ public class PIXRequestActorTest {
         new JavaTestKit(system) {{
             sendTestRequest(getRef(), MockPIXReceiver_Valid.class);
 
-            ResolvePatientIdentifierResponse response = expectMsgClass(Duration.create(2, TimeUnit.SECONDS), ResolvePatientIdentifierResponse.class);
+            ResolvePatientIdentifierResponse response = expectMsgClass(Duration.create(60, TimeUnit.SECONDS), ResolvePatientIdentifierResponse.class);
             assertNotNull(response.getIdentifier());
             assertEquals("975cac30-68e5-11e4-bf2a-04012ce65b02", response.getIdentifier().getIdentifier());
 
@@ -123,7 +123,7 @@ public class PIXRequestActorTest {
         new JavaTestKit(system) {{
             sendTestRequest(getRef(), MockPIXReceiver_NotFound.class);
 
-            ResolvePatientIdentifierResponse response = expectMsgClass(Duration.create(2, TimeUnit.SECONDS), ResolvePatientIdentifierResponse.class);
+            ResolvePatientIdentifierResponse response = expectMsgClass(Duration.create(60, TimeUnit.SECONDS), ResolvePatientIdentifierResponse.class);
             assertNull(response.getIdentifier());
 
             TestingUtils.clearRootContext(system, testConfig.getName());
@@ -135,7 +135,7 @@ public class PIXRequestActorTest {
         new JavaTestKit(system) {{
             sendTestRequest(getRef(), MockPIXReceiver_BadResponse.class);
 
-            ExceptError response = expectMsgClass(Duration.create(2, TimeUnit.SECONDS), ExceptError.class);
+            ExceptError response = expectMsgClass(Duration.create(60, TimeUnit.SECONDS), ExceptError.class);
             assertNotNull(response.getError());
 
             TestingUtils.clearRootContext(system, testConfig.getName());

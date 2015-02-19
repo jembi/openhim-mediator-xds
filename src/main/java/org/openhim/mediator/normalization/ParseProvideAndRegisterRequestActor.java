@@ -6,10 +6,14 @@
 
 package org.openhim.mediator.normalization;
 
+import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
 import ihe.iti.xds_b._2007.ProvideAndRegisterDocumentSetRequestType;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
+import org.openhim.mediator.engine.CoreResponse;
+import org.openhim.mediator.engine.MediatorConfig;
+import org.openhim.mediator.engine.messages.AddOrchestrationToCoreResponse;
 import org.openhim.mediator.engine.messages.FinishRequest;
 import org.openhim.mediator.engine.messages.SimpleMediatorRequest;
 import org.openhim.mediator.engine.messages.SimpleMediatorResponse;
@@ -29,6 +33,16 @@ import javax.xml.bind.Unmarshaller;
  */
 public class ParseProvideAndRegisterRequestActor extends UntypedActor {
 
+    private MediatorConfig config;
+
+    public ParseProvideAndRegisterRequestActor() {
+    }
+
+    public ParseProvideAndRegisterRequestActor(MediatorConfig config) {
+        this.config = config;
+    }
+
+
     public static ProvideAndRegisterDocumentSetRequestType parseRequest(String document) throws JAXBException {
         JAXBContext jaxbContext = JAXBContext.newInstance("ihe.iti.xds_b._2007");
         Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
@@ -38,12 +52,30 @@ public class ParseProvideAndRegisterRequestActor extends UntypedActor {
 
 
     private void processMsg(SimpleMediatorRequest<String> msg) {
+        ActorRef requestHandler = msg.getRequestHandler();
+        
+        CoreResponse.Orchestration orch = null;
+        boolean sendParseOrchestration = (config==null || config.getProperty("pnr.sendParseOrchestration")==null ||
+                "true".equalsIgnoreCase(config.getProperty("pnr.sendOrchestration")));
+
         try {
+            if (sendParseOrchestration) {
+                orch = new CoreResponse.Orchestration();
+                orch.setName("Parse Provider and Register Document Set.b contents");
+                orch.setRequest(new CoreResponse.Request());
+            }
+
             ProvideAndRegisterDocumentSetRequestType result = parseRequest(msg.getRequestObject());
             msg.getRespondTo().tell(new SimpleMediatorResponse<>(msg, result), getSelf());
+
+            if (sendParseOrchestration) {
+                orch.setResponse(new CoreResponse.Response());
+                requestHandler.tell(new AddOrchestrationToCoreResponse(orch), getSelf());
+            }
+
         } catch (JAXBException ex) {
             FinishRequest fr = new FinishRequest("Failed to parse XDS.b Provide and Register Document Set request: " + ex.getMessage(), "text/plain", HttpStatus.SC_BAD_REQUEST);
-            msg.getRequestHandler().tell(fr, getSelf());
+            requestHandler.tell(fr, getSelf());
         }
     }
 

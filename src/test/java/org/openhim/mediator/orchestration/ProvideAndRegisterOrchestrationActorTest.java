@@ -62,6 +62,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
     public void setUp() throws Exception {
         testConfig = new MediatorConfig();
         testConfig.setProperties("mediator-unit-test.properties");
+        testConfig.getProperties().setProperty("pnr.sendParseOrchestration", "false");
     }
 
     private void setupResolvePatientIDMock() {

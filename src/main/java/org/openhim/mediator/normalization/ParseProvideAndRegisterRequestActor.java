@@ -53,17 +53,23 @@ public class ParseProvideAndRegisterRequestActor extends UntypedActor {
 
     private void processMsg(SimpleMediatorRequest<String> msg) {
         ActorRef requestHandler = msg.getRequestHandler();
+        
+        CoreResponse.Orchestration orch = null;
+        boolean sendParseOrchestration = (config==null || config.getProperty("pnr.sendParseOrchestration")==null ||
+                "true".equalsIgnoreCase(config.getProperty("pnr.sendOrchestration")));
+
         try {
-            CoreResponse.Orchestration orch = new CoreResponse.Orchestration();
-            orch.setName("Parse Provider and Register Document Set.b contents");
-            orch.setRequest(new CoreResponse.Request());
+            if (sendParseOrchestration) {
+                orch = new CoreResponse.Orchestration();
+                orch.setName("Parse Provider and Register Document Set.b contents");
+                orch.setRequest(new CoreResponse.Request());
+            }
 
             ProvideAndRegisterDocumentSetRequestType result = parseRequest(msg.getRequestObject());
             msg.getRespondTo().tell(new SimpleMediatorResponse<>(msg, result), getSelf());
 
-            orch.setResponse(new CoreResponse.Response());
-            if (config==null || config.getProperty("pnr.sendParseOrchestration")==null ||
-                    "true".equalsIgnoreCase(config.getProperty("pnr.sendOrchestration"))) {
+            if (sendParseOrchestration) {
+                orch.setResponse(new CoreResponse.Response());
                 requestHandler.tell(new AddOrchestrationToCoreResponse(orch), getSelf());
             }
 

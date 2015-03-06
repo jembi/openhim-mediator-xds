@@ -15,13 +15,13 @@ ATNA auditing is supported for requests.
 
 # Usage
 * Ensure that a [Java Runtime Environment](http://java.com/en/) is installed on your system. At a minimum Java 7 is required.
-* Download the latest release of the mediator: `curl -LO https://github.com/jembi/openhim-mediator-xds/releases/download/v1.0.0/openhim-mediator-xds-1.0.0.tar.gz`
-* Extract the downloaded archive: `tar -xzf openhim-mediator-xds-1.0.0.tar.gz`
+* Download the latest release of the mediator: `curl -LO https://github.com/jembi/openhim-mediator-xds/releases/download/v1.0.1/openhim-mediator-xds-1.0.1.tar.gz`
+* Extract the downloaded archive: `tar -xzf openhim-mediator-xds-1.0.1.tar.gz`
 * Edit the properties file `mediator.properties` and change it as required for your implementantion
-* The mediator is packaged as a standalone jar and can be run as follows: `java -jar mediator-xds-1.0.0-jar-with-dependencies.jar --conf mediator.properties`
+* The mediator is packaged as a standalone jar and can be run as follows: `java -jar mediator-xds-1.0.1-jar-with-dependencies.jar --conf mediator.properties`
 
 # Compiling and running from source
 * `git clone https://github.com/jembi/openhim-mediator-xds.git`
 * `cd openhim-mediator-xds`
 * `mvn install`
-* `java -jar target/mediator-xds-1.0.0-jar-with-dependencies.jar`
+* `java -jar target/mediator-xds-1.0.1-jar-with-dependencies.jar`

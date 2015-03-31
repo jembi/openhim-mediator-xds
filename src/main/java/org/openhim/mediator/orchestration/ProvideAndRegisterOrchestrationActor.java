@@ -168,7 +168,10 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
 
     private void initIdentifiersToBeResolvedMappings() throws ValidationException {
         readPatientIdentifiers();
-        readHealthcareWorkerAndFacilityIdentifiers();
+
+        if (Util.isPropertyTrue(config, "pnr.providers.enrich", true) || Util.isPropertyTrue(config, "pnr.facilities.enrich", true)) {
+            readHealthcareWorkerAndFacilityIdentifiers();
+        }
     }
 
     private void readPatientIdentifiers() throws CXParseException {
@@ -242,12 +245,12 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
                     throw new ValidationException("Local provider and facility identifiers could not be extracted from the XDS metadata");
                 }
 
-                if (localProviderID!=null) {
+                if (localProviderID!=null && Util.isPropertyTrue(config, "pnr.providers.enrich", true)) {
                     Identifier id = new Identifier(localProviderID, new AssigningAuthority("", localProviderIDAssigningAuthority));
                     enterpriseHealthcareWorkerIds.add(new HealthcareWorkerIdentifierMapping(id, personSlotValList));
                 }
 
-                if (localLocationID!=null) {
+                if (localLocationID!=null && Util.isPropertyTrue(config, "pnr.facilities.enrich", true)) {
                     Identifier id = new Identifier(localLocationID, new AssigningAuthority("", localLocationIDAssigningAuthority));
                     enterpriseFacilityIds.add(new FacilityIdentifierMapping(id, localLocationName, institutionSlotValList));
                 }

@@ -113,10 +113,14 @@ public class ProvideAndRegisterOrchestrationActorTest {
     }
 
     private void sendPnRMessage(ActorSystem system, ActorRef ref, String resource) throws Exception {
+        sendPnRMessage(testConfig, system, ref, resource);
+    }
+
+    private void sendPnRMessage(MediatorConfig config, ActorSystem system, ActorRef ref, String resource) throws Exception {
         InputStream testPnRIn = getClass().getClassLoader().getResourceAsStream(resource);
         final String testPnR = IOUtils.toString(testPnRIn);
 
-        ActorRef actor = system.actorOf(Props.create(ProvideAndRegisterOrchestrationActor.class, testConfig, resolvePIDDummy, resolveHWIDDummy, resolveFIDDummy));
+        ActorRef actor = system.actorOf(Props.create(ProvideAndRegisterOrchestrationActor.class, config, resolvePIDDummy, resolveHWIDDummy, resolveFIDDummy));
         OrchestrateProvideAndRegisterRequest testMsg = new OrchestrateProvideAndRegisterRequest(ref, ref, testPnR, null);
 
         actor.tell(testMsg, ref);
@@ -251,6 +255,56 @@ public class ProvideAndRegisterOrchestrationActorTest {
             FinishRequest response = expectMsgClass(waitTime, FinishRequest.class);
 
             assertEquals(new Integer(400), response.getResponseStatus());
+        }};
+    }
+
+    @Test
+    public void shouldNotSendResolveHealtcareWorkerIDRequestsIfDisabled() throws Exception {
+        final MediatorConfig config = new MediatorConfig();
+        config.setProperties("mediator-unit-test.properties");
+        config.getProperties().setProperty("pnr.sendParseOrchestration", "false");
+        config.getProperties().setProperty("pnr.providers.enrich", "false");
+
+        final List<DummyResolveIdentifierActor.ExpectedRequest> expectedHealthcareWorkerIds = new ArrayList<>();
+        expectedHealthcareWorkerIds.add(new DummyResolveIdentifierActor.ExpectedRequest(new Identifier("pro111", new AssigningAuthority("", "1.2.3"))));
+        expectedHealthcareWorkerIds.add(new DummyResolveIdentifierActor.ExpectedRequest(new Identifier("pro112", new AssigningAuthority("", "1.2.3"))));
+
+        setupResolvePatientIDMock();
+        setupResolveHCWIDMock(expectedHealthcareWorkerIds);
+        setupResolveFacilityIDMock();
+
+        new JavaTestKit(system) {{
+            sendPnRMessage(config, system, getRef(), "pnr1.xml");
+            expectMsgClass(waitTime, OrchestrateProvideAndRegisterRequestResponse.class);
+
+            for (DummyResolveIdentifierActor.ExpectedRequest expectedRequest : expectedHealthcareWorkerIds) {
+                assertFalse(expectedRequest.wasSeen());
+            }
+        }};
+    }
+
+    @Test
+    public void shouldNotSendResolveFacilityIDRequestsIfDisabled() throws Exception {
+        final MediatorConfig config = new MediatorConfig();
+        config.setProperties("mediator-unit-test.properties");
+        config.getProperties().setProperty("pnr.sendParseOrchestration", "false");
+        config.getProperties().setProperty("pnr.facilities.enrich", "false");
+
+        final List<DummyResolveIdentifierActor.ExpectedRequest> expectedFacilityIds = new ArrayList<>();
+        expectedFacilityIds.add(new DummyResolveIdentifierActor.ExpectedRequest(new Identifier("45", new AssigningAuthority("", "1.2.3.4.5.6.7.8.9.1789"))));
+        expectedFacilityIds.add(new DummyResolveIdentifierActor.ExpectedRequest(new Identifier("53", new AssigningAuthority("", "1.2.3.4.5.6.7.8.9.1789"))));
+
+        setupResolvePatientIDMock();
+        setupResolveHCWIDMock();
+        setupResolveFacilityIDMock(expectedFacilityIds);
+
+        new JavaTestKit(system) {{
+            sendPnRMessage(config, system, getRef(), "pnr1.xml");
+            expectMsgClass(waitTime, OrchestrateProvideAndRegisterRequestResponse.class);
+
+            for (DummyResolveIdentifierActor.ExpectedRequest expectedRequest : expectedFacilityIds) {
+                assertFalse(expectedRequest.wasSeen());
+            }
         }};
     }
 }

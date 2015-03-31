@@ -76,9 +76,11 @@ public class ATNAAuditingActor extends UntypedActor {
         res.getAuditSourceIdentification().add(ATNAUtil.buildAuditSource("openhim"));
 
         for (Identifier id : audit.getParticipantIdentifiers()) {
-            res.getParticipantObjectIdentification().add(
-                    ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
-            );
+            if (id!=null) {
+                res.getParticipantObjectIdentification().add(
+                        ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
+                );
+            }
         }
         res.getParticipantObjectIdentification().add(
                 ATNAUtil.buildParticipantObjectIdentificationType(
@@ -108,9 +110,11 @@ public class ATNAAuditingActor extends UntypedActor {
 
         // Max of 1 patient is allowed
         Identifier id = audit.getParticipantIdentifiers().get(0);
-        res.getParticipantObjectIdentification().add(
-                ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
-        );
+        if (id!=null) {
+            res.getParticipantObjectIdentification().add(
+                    ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
+            );
+        }
 
         List<ATNAUtil.ParticipantObjectDetail> pod = new ArrayList<>();
         pod.add(new ATNAUtil.ParticipantObjectDetail("QueryEncoding", "UTF-8".getBytes()));
@@ -144,9 +148,11 @@ public class ATNAAuditingActor extends UntypedActor {
 
         // Max of 1 patient is allowed
         Identifier id = audit.getParticipantIdentifiers().get(0);
-        res.getParticipantObjectIdentification().add(
-                ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
-        );
+        if (id!=null) {
+            res.getParticipantObjectIdentification().add(
+                    ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
+            );
+        }
 
         List<ATNAUtil.ParticipantObjectDetail> pod = new ArrayList<>();
         pod.add(new ATNAUtil.ParticipantObjectDetail("QueryEncoding", "UTF-8".getBytes()));
@@ -188,9 +194,11 @@ public class ATNAAuditingActor extends UntypedActor {
 
         // Only one is allowed
         Identifier id = audit.getParticipantIdentifiers().get(0);
-        res.getParticipantObjectIdentification().add(
-                ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
-        );
+        if (id!=null) {
+            res.getParticipantObjectIdentification().add(
+                    ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
+            );
+        }
 
         List<ATNAUtil.ParticipantObjectDetail> pod = new ArrayList<>();
         pod.add(new ATNAUtil.ParticipantObjectDetail("QueryEncoding", "UTF-8".getBytes()));
@@ -224,9 +232,11 @@ public class ATNAAuditingActor extends UntypedActor {
 
         // Only one is allowed
         Identifier id = audit.getParticipantIdentifiers().get(0);
-        res.getParticipantObjectIdentification().add(
-                ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
-        );
+        if (id!=null) {
+            res.getParticipantObjectIdentification().add(
+                    ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
+            );
+        }
 
         res.getParticipantObjectIdentification().add(
                 ATNAUtil.buildParticipantObjectIdentificationType(

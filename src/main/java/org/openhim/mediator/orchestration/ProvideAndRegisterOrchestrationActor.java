@@ -52,14 +52,22 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         abstract void resolve(Identifier resolvedId);
     }
 
-    private class PatientIdentifierMapping extends IdentifierMapping {
+    private class DocumentNode {
         String documentNodeURN;
         RegistryObjectType documentNode;
-        boolean processedNewRegistrationRequest = false;
 
-        public PatientIdentifierMapping(Identifier fromId, String documentNodeURN, RegistryObjectType documentNode) {
+        public DocumentNode(String documentNodeURN, RegistryObjectType documentNode) {
             this.documentNodeURN = documentNodeURN;
             this.documentNode = documentNode;
+        }
+    }
+
+    private class PatientIdentifierMapping extends IdentifierMapping {
+        List<DocumentNode> nodes = new ArrayList<>();
+        boolean processedNewRegistrationRequest = false;
+
+        public PatientIdentifierMapping(Identifier fromId, DocumentNode node) {
+            nodes.add(node);
             this.fromId = fromId;
         }
 
@@ -68,7 +76,9 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
             resolved = true;
 
             if (resolvedId!=null) {
-                InfosetUtil.setExternalIdentifierValue(documentNodeURN, resolvedId.toString(), documentNode);
+                for (DocumentNode node : nodes) {
+                    InfosetUtil.setExternalIdentifierValue(node.documentNodeURN, resolvedId.toString(), node.documentNode);
+                }
                 successful = true;
             }
         }
@@ -181,15 +191,26 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         }
     }
 
+    private void addPatientIdToResolve(Identifier id, DocumentNode node) {
+        for (IdentifierMapping mapping : enterprisePatientIds) {
+            if (mapping.fromId.equals(id)) {
+                ((PatientIdentifierMapping)mapping).nodes.add(node);
+                return;
+            }
+        }
+
+        enterprisePatientIds.add(new PatientIdentifierMapping(id, node));
+    }
+
     private void readPatientIdentifiers() throws CXParseException {
         RegistryPackageType regPac = InfosetUtil.getRegistryPackage(parsedRequest.getSubmitObjectsRequest(), XDSConstants.UUID_XDSSubmissionSet);
         String CX = InfosetUtil.getExternalIdentifierValue(XDSConstants.UUID_XDSSubmissionSet_patientId, regPac);
-        enterprisePatientIds.add(new PatientIdentifierMapping(new Identifier(CX), XDSConstants.UUID_XDSSubmissionSet_patientId, regPac));
+        addPatientIdToResolve(new Identifier(CX), new DocumentNode(XDSConstants.UUID_XDSSubmissionSet_patientId, regPac));
 
         List<ExtrinsicObjectType> eos = InfosetUtil.getExtrinsicObjects(parsedRequest.getSubmitObjectsRequest());
         for (ExtrinsicObjectType eo : eos) {
             String documentPatCX = InfosetUtil.getExternalIdentifierValue(XDSConstants.UUID_XDSDocumentEntry_patientId, eo);
-            enterprisePatientIds.add(new PatientIdentifierMapping(new Identifier(documentPatCX), XDSConstants.UUID_XDSDocumentEntry_patientId, eo));
+            addPatientIdToResolve(new Identifier(documentPatCX), new DocumentNode(XDSConstants.UUID_XDSDocumentEntry_patientId, eo));
         }
     }
 

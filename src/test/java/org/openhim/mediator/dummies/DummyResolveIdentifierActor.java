@@ -23,13 +23,17 @@ import static org.junit.Assert.fail;
 public class DummyResolveIdentifierActor extends UntypedActor {
     public static class ExpectedRequest {
         private Identifier identifier;
-        private boolean seen = false;
+        private int seen = 0;
 
         public ExpectedRequest(Identifier identifier) {
             this.identifier = identifier;
         }
 
         public boolean wasSeen() {
+            return seen>0;
+        }
+
+        public int getSeen() {
             return seen;
         }
 
@@ -67,11 +71,11 @@ public class DummyResolveIdentifierActor extends UntypedActor {
         if (expectedMessageClass.isInstance(msg)) {
             if (expectedRequest!=null) {
                 assertEquals(expectedRequest, msg);
-                expectedRequest.seen = true;
+                expectedRequest.seen++;
             } else if (expectedRequests!=null) {
                 for (ExpectedRequest er : expectedRequests) {
                     if (er.identifier.equals(expectedMessageClass.cast(msg).getIdentifier())) {
-                        er.seen = true;
+                        er.seen++;
                     }
                 }
             }

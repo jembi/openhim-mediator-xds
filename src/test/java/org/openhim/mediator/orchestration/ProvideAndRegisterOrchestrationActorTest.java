@@ -307,4 +307,27 @@ public class ProvideAndRegisterOrchestrationActorTest {
             }
         }};
     }
+
+    @Test
+    public void shouldNotSendDuplicateResolvePatientIDRequests() throws Exception {
+        final List<DummyResolveIdentifierActor.ExpectedRequest> expectedPatientIds = new ArrayList<>();
+        expectedPatientIds.add(new DummyResolveIdentifierActor.ExpectedRequest(new Identifier("1111111111", new AssigningAuthority("", "1.2.3"))));
+
+        setupResolvePatientIDMock(expectedPatientIds);
+        setupResolveHCWIDMock();
+        setupResolveFacilityIDMock();
+
+        new JavaTestKit(system) {{
+            sendPnRMessage(system, getRef(), "pnr2.xml");
+            expectMsgClass(waitTime, OrchestrateProvideAndRegisterRequestResponse.class);
+
+            for (DummyResolveIdentifierActor.ExpectedRequest er : expectedPatientIds) {
+                if (!er.wasSeen()) {
+                    fail("Resolve id request for " + er.getIdentifier() + " wasn't sent");
+                } else if (er.getSeen()>=2) {
+                    fail("Resolve id request for " + er.getIdentifier() + " was sent more than once");
+                }
+            }
+        }};
+    }
 }

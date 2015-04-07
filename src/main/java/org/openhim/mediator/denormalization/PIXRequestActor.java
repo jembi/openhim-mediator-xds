@@ -6,11 +6,14 @@
 
 package org.openhim.mediator.denormalization;
 
+import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
 import akka.actor.UntypedActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import ca.uhn.hl7v2.HL7Exception;
+import ca.uhn.hl7v2.model.v25.message.ACK;
+import ca.uhn.hl7v2.model.v25.message.ADT_A01;
 import ca.uhn.hl7v2.model.v25.message.QBP_Q21;
 import ca.uhn.hl7v2.model.v25.message.RSP_K23;
 import ca.uhn.hl7v2.model.v25.segment.MSH;
@@ -33,6 +36,7 @@ import java.util.*;
  * Messages supported:
  * <ul>
  * <li>ResolvePatientIdentifier - responds with ResolvePatientIdentifierResponse</li>
+ * <li>RegisterNewPatient - responds with RegisterNewPatientResponse</li>
  * </ul>
  */
 public class PIXRequestActor extends UntypedActor {
@@ -40,10 +44,11 @@ public class PIXRequestActor extends UntypedActor {
 
     private MediatorConfig config;
 
-    private Map<String, ResolvePatientIdentifier> originalRequests = new HashMap<>();
+    private Map<String, MediatorRequestMessage> originalRequests = new HashMap<>();
     private Map<String, String> controlIds = new HashMap<>();
 
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmssZ");
+    private static final SimpleDateFormat dateFormatDay = new SimpleDateFormat("yyyyMMdd");
 
 
     public PIXRequestActor(MediatorConfig config) {
@@ -51,7 +56,7 @@ public class PIXRequestActor extends UntypedActor {
     }
 
 
-    public String constructPIXQuery(String correlationId, ResolvePatientIdentifier msg) throws HL7Exception {
+    public String constructQBP_Q21(String correlationId, ResolvePatientIdentifier msg) throws HL7Exception {
 
         QBP_Q21 qbp_q21 = new QBP_Q21();
         Terser t = new Terser(qbp_q21);
@@ -93,42 +98,101 @@ public class PIXRequestActor extends UntypedActor {
         return p.encode(qbp_q21);
     }
 
+    public String constructADT_A04(String correlationId, RegisterNewPatient msg) throws HL7Exception {
+
+        ADT_A01 adt_a04 = new ADT_A01();
+        Terser t = new Terser(adt_a04);
+
+        MSH msh = (MSH) t.getSegment("MSH");
+        t.set("MSH-1", "|");
+        t.set("MSH-2", "^~\\&");
+        t.set("MSH-3-1", config.getProperty("pix.sendingApplication"));
+        t.set("MSH-4-1", config.getProperty("pix.sendingFacility"));
+        t.set("MSH-5-1", config.getProperty("pix.receivingApplication"));
+        t.set("MSH-6-1", config.getProperty("pix.receivingFacility"));
+        msh.getDateTimeOfMessage().getTime().setValue(dateFormat.format(new Date()));
+        t.set("MSH-9-1", "ADT");
+        t.set("MSH-9-2", "A04");
+        t.set("MSH-9-3", "ADT_A01");
+        //MSH-10 message control id
+        String _msh10 = UUID.randomUUID().toString();
+        controlIds.put(correlationId, _msh10);
+        t.set("MSH-10", _msh10);
+        t.set("MSH-11-1", "P");
+        t.set("MSH-12-1-1", "2.5");
+
+        t.set("EVN-2", dateFormatDay.format(new Date()));
+
+        t.set("PID-3-1", msg.getPatientIdentifier().getIdentifier());
+        t.set("PID-3-4", msg.getPatientIdentifier().getAssigningAuthority().getAssigningAuthority());
+        t.set("PID-3-4-2", msg.getPatientIdentifier().getAssigningAuthority().getAssigningAuthorityId());
+        t.set("PID-3-4-3", "ISO");
+        t.set("PID-5-1", msg.getFamilyName());
+        t.set("PID-5-2", msg.getGivenName());
+        t.set("PID-7", msg.getBirthDate());
+        t.set("PID-8", msg.getGender());
+        t.set("PID-13", msg.getTelecom());
+        t.set("PID-15", msg.getLanguageCommunicationCode());
+
+        t.set("PV1-2", "O");
+
+        Parser p = new GenericParser();
+        return p.encode(adt_a04);
+    }
+
+    private void sendPIXRequest(ActorRef requestHandler, String orchestration, String correlationId, String pixRequest) {
+        boolean secure = config.getProperty("pix.secure").equalsIgnoreCase("true");
+
+        int port;
+        if (secure) {
+            port = Integer.parseInt(config.getProperty("pix.manager.securePort"));
+        } else {
+            port = Integer.parseInt(config.getProperty("pix.manager.port"));
+        }
+
+        ActorSelection connector = getContext().actorSelection(config.userPathFor("mllp-connector"));
+        MediatorSocketRequest request = new MediatorSocketRequest(
+                requestHandler, getSelf(), orchestration, correlationId,
+                config.getProperty("pix.manager.host"), port, pixRequest, secure
+        );
+        connector.tell(request, getSelf());
+    }
+
     private void sendPIXRequest(ResolvePatientIdentifier msg) {
         try {
             String correlationId = UUID.randomUUID().toString();
-            String pixQuery = constructPIXQuery(correlationId, msg);
+            String pixQuery = constructQBP_Q21(correlationId, msg);
             originalRequests.put(correlationId, msg);
-
-            boolean secure = config.getProperty("pix.secure").equalsIgnoreCase("true");
-            int port;
-            if (secure) {
-                port = Integer.parseInt(config.getProperty("pix.manager.securePort"));
-            } else {
-                port = Integer.parseInt(config.getProperty("pix.manager.port"));
-            }
-
-            ActorSelection connector = getContext().actorSelection(config.userPathFor("mllp-connector"));
-            MediatorSocketRequest request = new MediatorSocketRequest(
-                    msg.getRequestHandler(), getSelf(), "PIX Resolve Enterprise Identifier", correlationId,
-                    config.getProperty("pix.manager.host"), port, pixQuery, secure
-            );
-            connector.tell(request, getSelf());
+            sendPIXRequest(msg.getRequestHandler(), "PIX Resolve Enterprise Identifier", correlationId, pixQuery);
         } catch (HL7Exception ex) {
             msg.getRequestHandler().tell(new ExceptError(ex), getSelf());
         }
     }
 
-    private Identifier parseResponse(String response) throws HL7Exception {
+    private void sendPIXRequest(RegisterNewPatient msg) {
+        try {
+            String correlationId = UUID.randomUUID().toString();
+            String pixRequest = constructADT_A04(correlationId, msg);
+            originalRequests.put(correlationId, msg);
+            sendPIXRequest(msg.getRequestHandler(), "PIX Create Patient Demographic Record", correlationId, pixRequest);
+        } catch (HL7Exception ex) {
+            msg.getRequestHandler().tell(new ExceptError(ex), getSelf());
+        }
+    }
+
+    private Identifier parseRSP_K23(String response) throws HL7Exception {
         Parser parser = new GenericParser();
         Object parsedMsg = parser.parse(response);
-        if (!(parsedMsg instanceof RSP_K23))
+        if (!(parsedMsg instanceof RSP_K23)) {
             return null;
+        }
 
         RSP_K23 msg = (RSP_K23)parsedMsg;
 
         int numIds = msg.getQUERY_RESPONSE().getPID().getPid3_PatientIdentifierListReps();
-        if (numIds < 1)
+        if (numIds < 1) {
             return null;
+        }
 
         String id = msg.getQUERY_RESPONSE().getPID().getPatientIdentifierList(0).getCx1_IDNumber().getValue();
         String assigningAuthority = msg.getQUERY_RESPONSE().getPID().getPatientIdentifierList(0).getAssigningAuthority().getNamespaceID().getValue();
@@ -137,16 +201,64 @@ public class PIXRequestActor extends UntypedActor {
         return new Identifier(id, new AssigningAuthority(assigningAuthority, assigningAuthorityId));
     }
 
-    private void processResponse(MediatorSocketResponse msg) {
+    private void processQBP_Q21Response(MediatorSocketResponse msg, ResolvePatientIdentifier originalRequest) {
         Identifier result = null;
         try {
-            result = parseResponse(msg.getBody());
-            ResolvePatientIdentifier originalRequest = originalRequests.remove(msg.getOriginalRequest().getCorrelationId());
+            result = parseRSP_K23(msg.getBody());
             originalRequest.getRespondTo().tell(new ResolvePatientIdentifierResponse(originalRequest, result), getSelf());
         } catch (HL7Exception ex) {
             msg.getOriginalRequest().getRequestHandler().tell(new ExceptError(ex), getSelf());
         } finally {
             sendAuditMessage(result, msg);
+        }
+    }
+
+    private String parseACKError(String response) throws HL7Exception {
+        Parser parser = new GenericParser();
+        Object parsedMsg = parser.parse(response);
+        if (!(parsedMsg instanceof ACK)) {
+            return null;
+        }
+
+        ACK msg = (ACK)parsedMsg;
+        if (msg.getMSA()!=null && msg.getMSA().getAcknowledgmentCode()!=null &&
+                "AA".equalsIgnoreCase(msg.getMSA().getAcknowledgmentCode().getValue())) {
+            return null;
+        }
+
+        String err = "Failed to register new patient:\n";
+
+        if (msg.getERR()!=null && msg.getERR().getErr3_HL7ErrorCode()!=null) {
+            if (msg.getERR().getErr3_HL7ErrorCode().getCwe1_Identifier()!=null) {
+                err += msg.getERR().getErr3_HL7ErrorCode().getCwe1_Identifier().getValue() + "\n";
+            }
+            if (msg.getERR().getErr3_HL7ErrorCode().getCwe2_Text()!=null) {
+                err += msg.getERR().getErr3_HL7ErrorCode().getCwe2_Text().getValue() + "\n";
+            }
+        }
+
+        return err;
+    }
+
+    private void processADT_A04Response(MediatorSocketResponse msg, RegisterNewPatient originalRequest) {
+        try {
+            String err = parseACKError(msg.getBody());
+            originalRequest.getRespondTo().tell(new RegisterNewPatientResponse(originalRequest, err == null, err), getSelf());
+        } catch (HL7Exception ex) {
+            msg.getOriginalRequest().getRequestHandler().tell(new ExceptError(ex), getSelf());
+        } finally {
+            //TODO
+            //sendAuditMessage(result, msg);
+        }
+    }
+
+    private void processResponse(MediatorSocketResponse msg) {
+        MediatorRequestMessage originalRequest = originalRequests.remove(msg.getOriginalRequest().getCorrelationId());
+
+        if (originalRequest instanceof ResolvePatientIdentifier) {
+            processQBP_Q21Response(msg, (ResolvePatientIdentifier) originalRequest);
+        } else if (originalRequest instanceof RegisterNewPatient) {
+            processADT_A04Response(msg, (RegisterNewPatient) originalRequest);
         }
     }
 
@@ -171,6 +283,12 @@ public class PIXRequestActor extends UntypedActor {
                 log.debug("Patient ID: " + ((ResolvePatientIdentifier) msg).getIdentifier());
             }
             sendPIXRequest((ResolvePatientIdentifier) msg);
+        } else if (msg instanceof RegisterNewPatient) {
+            log.info("Received request to register new patient demographic record");
+            if (log.isDebugEnabled()) {
+                log.debug("Patient ID: " + ((RegisterNewPatient) msg).getPatientIdentifier());
+            }
+            sendPIXRequest((RegisterNewPatient) msg);
         } else if (msg instanceof MediatorSocketResponse) {
             processResponse((MediatorSocketResponse) msg);
         } else {

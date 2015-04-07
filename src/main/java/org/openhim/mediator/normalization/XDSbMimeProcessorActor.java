@@ -23,7 +23,7 @@ import javax.mail.internet.MimeMultipart;
 import javax.mail.util.ByteArrayDataSource;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Enumeration;
+import java.util.*;
 
 /**
  * A MIME container for processing MTOM/XOP requests.
@@ -33,7 +33,7 @@ import java.util.Enumeration;
  * <br/><br/>
  * Messages supported:
  * <ul>
- *     <li>MimeMessage: Parses the string as an MTOM/XOP request and responds with the SOAP part (XDSbMimeProcessorResponse)</li>
+ *     <li>MimeMessage: Parses the string as an MTOM/XOP request and responds with the SOAP part and a map referencing the other documents (XDSbMimeProcessorResponse)</li>
  *     <li>EnrichedMessage: Returns the original MTOM/XOP request but with the provided enriched SOAP part (XDSbMimeProcessorResponse)</li>
  * </ul>
  */
@@ -55,8 +55,15 @@ public class XDSbMimeProcessorActor extends UntypedActor {
     }
 
     public static class XDSbMimeProcessorResponse extends SimpleMediatorResponse<String> {
-        public XDSbMimeProcessorResponse(MediatorRequestMessage originalRequest, String requestObject) {
+        final List<String> documents;
+
+        public XDSbMimeProcessorResponse(MediatorRequestMessage originalRequest, String requestObject, List<String> documents) {
             super(originalRequest, requestObject);
+            this.documents = documents;
+        }
+
+        public List<String> getDocuments() {
+            return documents;
         }
     }
 
@@ -80,23 +87,24 @@ public class XDSbMimeProcessorActor extends UntypedActor {
 
     MimeMultipart mimeMessage;
 
-    private String parseMimeMessage(String msg, String contentType) throws IOException, MessagingException, SOAPPartNotFound, UnprocessableContentFound {
-        String soapPart = null;
+    private String _soapPart;
+    private List<String> _documents = new ArrayList<>(1);
 
+    private void parseMimeMessage(String msg, String contentType) throws IOException, MessagingException, SOAPPartNotFound, UnprocessableContentFound {
         mimeMessage = new MimeMultipart(new ByteArrayDataSource(msg, contentType));
         for (int i=0; i<mimeMessage.getCount(); i++) {
             BodyPart part = mimeMessage.getBodyPart(i);
 
             if (part.getContentType().contains("application/soap+xml")) {
-                soapPart = getValue(part);
-                break;
+                _soapPart = getValue(part);
+            } else {
+                _documents.add(getValue(part));
             }
         }
 
-        if (soapPart==null) {
+        if (_soapPart==null) {
             throw new SOAPPartNotFound();
         }
-        return soapPart;
     }
 
     private String getValue(BodyPart part) throws IOException, MessagingException, UnprocessableContentFound {
@@ -147,8 +155,8 @@ public class XDSbMimeProcessorActor extends UntypedActor {
     public void onReceive(Object msg) throws Exception {
         if (msg instanceof MimeMessage) {
             try {
-                String soapPart = parseMimeMessage(((MimeMessage) msg).getRequestObject(), ((MimeMessage) msg).contentType);
-                ((MimeMessage) msg).getRespondTo().tell(new XDSbMimeProcessorResponse((MediatorRequestMessage) msg, soapPart), getSelf());
+                parseMimeMessage(((MimeMessage) msg).getRequestObject(), ((MimeMessage) msg).contentType);
+                ((MimeMessage) msg).getRespondTo().tell(new XDSbMimeProcessorResponse((MediatorRequestMessage) msg, _soapPart, _documents), getSelf());
             } catch (IOException | MessagingException | SOAPPartNotFound | UnprocessableContentFound ex) {
                 ((MimeMessage) msg).getRequestHandler().tell(new ExceptError(ex), getSelf());
             }
@@ -158,7 +166,7 @@ public class XDSbMimeProcessorActor extends UntypedActor {
             } else {
                 try {
                     String mime = buildEnrichedMimeMessage(((EnrichedMessage) msg).getRequestObject());
-                    ((EnrichedMessage) msg).getRespondTo().tell(new XDSbMimeProcessorResponse((MediatorRequestMessage) msg, mime), getSelf());
+                    ((EnrichedMessage) msg).getRespondTo().tell(new XDSbMimeProcessorResponse((MediatorRequestMessage) msg, mime, _documents), getSelf());
                 } catch (MessagingException | IOException ex) {
                     ((EnrichedMessage) msg).getRequestHandler().tell(new ExceptError(ex), getSelf());
                 }

@@ -17,7 +17,6 @@ import ca.uhn.hl7v2.model.v25.message.ADT_A01;
 import ca.uhn.hl7v2.model.v25.message.QBP_Q21;
 import ca.uhn.hl7v2.model.v25.message.RSP_K23;
 import ca.uhn.hl7v2.model.v25.segment.MSH;
-import ca.uhn.hl7v2.model.v25.segment.PID;
 import ca.uhn.hl7v2.parser.GenericParser;
 import ca.uhn.hl7v2.parser.Parser;
 import ca.uhn.hl7v2.util.Terser;
@@ -212,7 +211,7 @@ public class PIXRequestActor extends UntypedActor {
         } catch (HL7Exception ex) {
             msg.getOriginalRequest().getRequestHandler().tell(new ExceptError(ex), getSelf());
         } finally {
-            sendAuditMessage(result, msg);
+            sendAuditMessage(ATNAAudit.TYPE.PIX_REQUEST, result, msg, result!=null);
         }
     }
 
@@ -244,14 +243,15 @@ public class PIXRequestActor extends UntypedActor {
     }
 
     private void processADT_A04Response(MediatorSocketResponse msg, RegisterNewPatient originalRequest) {
+        String err = null;
         try {
-            String err = parseACKError(msg.getBody());
+            err = parseACKError(msg.getBody());
             originalRequest.getRespondTo().tell(new RegisterNewPatientResponse(originalRequest, err == null, err), getSelf());
         } catch (HL7Exception ex) {
             msg.getOriginalRequest().getRequestHandler().tell(new ExceptError(ex), getSelf());
         } finally {
-            //TODO
-            //sendAuditMessage(result, msg);
+            Identifier pid = originalRequest.getPatientIdentifiers().get(0);
+            sendAuditMessage(ATNAAudit.TYPE.PIX_IDENTITY_FEED, pid, msg, err==null);
         }
     }
 
@@ -265,12 +265,13 @@ public class PIXRequestActor extends UntypedActor {
         }
     }
 
-    private void sendAuditMessage(Identifier resolvedId, MediatorSocketResponse msg) {
+    private void sendAuditMessage(ATNAAudit.TYPE type, Identifier patientID, MediatorSocketResponse msg, boolean outcome) {
         try {
-            ATNAAudit audit = new ATNAAudit(ATNAAudit.TYPE.PIX_REQUEST);
+            ATNAAudit audit = new ATNAAudit(type);
             audit.setMessage(((MediatorSocketRequest) msg.getOriginalRequest()).getBody());
-            audit.setParticipantIdentifiers(Collections.singletonList(resolvedId));
+            audit.setParticipantIdentifiers(Collections.singletonList(patientID));
             audit.setUniqueId(controlIds.remove(msg.getOriginalRequest().getCorrelationId()));
+            audit.setOutcome(outcome);
 
             getContext().actorSelection(config.userPathFor("atna-auditing")).tell(audit, getSelf());
         } catch (Exception ex) {

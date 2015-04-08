@@ -14,6 +14,7 @@ import akka.event.LoggingAdapter;
 import ihe.iti.xds_b._2007.ProvideAndRegisterDocumentSetRequestType;
 import ihe.iti.xds_b._2007.ObjectFactory;
 import oasis.names.tc.ebxml_regrep.xsd.rim._3.*;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
 import org.dcm4chee.xds2.common.XDSConstants;
 import org.dcm4chee.xds2.infoset.util.InfosetUtil;
@@ -26,8 +27,18 @@ import org.openhim.mediator.exceptions.CXParseException;
 import org.openhim.mediator.exceptions.ValidationException;
 import org.openhim.mediator.messages.*;
 import org.openhim.mediator.normalization.ParseProvideAndRegisterRequestActor;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 import javax.xml.bind.JAXBException;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -404,11 +415,38 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         return result;
     }
 
+    /**
+     * Attempt to read the message document at CDA level 2 for any available patient demographic information.
+     *
+     * It only attempts to read anything it can and won't fail if the document isn't a CDA.
+     */
     private RegisterNewPatient buildRegistrationRequestFromCDA(String document) {
-        //TODO
-        return new RegisterNewPatient(
-                originalRequest.getRequestHandler(), getSelf(), getAllKnownPatientIdentifiers(), "Sally", "Patient", "F", "19700528", "+27731234567", "en"
-        );
+        try {
+            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            Document doc = builder.parse(IOUtils.toInputStream(document));
+            XPath xpath = XPathFactory.newInstance().newXPath();
+
+            String givenName = xpath.compile("ClinicalDocument/recordTarget/patientRole/patient/name/given").evaluate(doc);
+            String lastName = xpath.compile("ClinicalDocument/recordTarget/patientRole/patient/name/family").evaluate(doc);
+            String gender = xpath.compile("ClinicalDocument/recordTarget/patientRole/patient/administrativeGenderCode/@code").evaluate(doc);
+            String birthdate = xpath.compile("ClinicalDocument/recordTarget/patientRole/patient/birthTime/@value").evaluate(doc);
+            String telecom = xpath.compile("ClinicalDocument/recordTarget/patientRole/telecom/@value").evaluate(doc);
+            String languagePreference = xpath.compile("ClinicalDocument/recordTarget/patientRole/patient/languageCommunication/languageCode/@code").evaluate(doc);
+
+            return new RegisterNewPatient(
+                    originalRequest.getRequestHandler(), getSelf(), getAllKnownPatientIdentifiers(), givenName, lastName, gender, birthdate, telecom, languagePreference
+            );
+
+        } catch (SAXException ex) {
+            //Not a failure if not a valid CDA document
+            return new RegisterNewPatient(
+                    originalRequest.getRequestHandler(), getSelf(), getAllKnownPatientIdentifiers(), null, null, null, null, null, null
+            );
+
+        } catch (XPathExpressionException | ParserConfigurationException | IOException ex) {
+            originalRequest.getRequestHandler().tell(new ExceptError(ex), getSelf());
+            return null;
+        }
     }
 
     private void autoRegisterPatient() {

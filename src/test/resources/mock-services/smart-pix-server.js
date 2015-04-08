@@ -39,7 +39,7 @@ net.createServer(function(c) {
     if (chunk.toString().indexOf(footer) != -1) {
       console.log('Recieved message:\n' + data.replace('\r', '\n') + '\n\n');
 
-      var regex = /(PID|QPD)\|[\w\s]*\|[\w\s\-\.]*\|([\w\.\^\&\~]+)\|/g;
+      var regex = /(PID|QPD)\|[\w\s]*\|[\w\s\-\.]*\|([\w\.\^\&\~]+)/g;
 
       var pids = regex.exec(data)[2].split('~');
       var _i, _len;

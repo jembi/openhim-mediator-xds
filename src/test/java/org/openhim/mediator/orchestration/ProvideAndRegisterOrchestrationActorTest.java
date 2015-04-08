@@ -9,11 +9,13 @@ package org.openhim.mediator.orchestration;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import akka.actor.UntypedActor;
 import akka.testkit.JavaTestKit;
 import ihe.iti.xds_b._2007.ProvideAndRegisterDocumentSetRequestType;
 import oasis.names.tc.ebxml_regrep.xsd.rim._3.ExtrinsicObjectType;
 import oasis.names.tc.ebxml_regrep.xsd.rim._3.RegistryPackageType;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpStatus;
 import org.dcm4chee.xds2.common.XDSConstants;
 import org.dcm4chee.xds2.infoset.util.InfosetUtil;
 import org.junit.AfterClass;
@@ -39,11 +41,60 @@ import static org.junit.Assert.*;
 
 public class ProvideAndRegisterOrchestrationActorTest {
 
+    private static class DummyIdentityFeedReceiverActor extends UntypedActor {
+        static class ExpectedRequest {
+            RegisterNewPatient expectedRequest;
+            int seen = 0;
+        }
+
+        ExpectedRequest expectedRequest;
+
+        public DummyIdentityFeedReceiverActor(ExpectedRequest expectedRequest) {
+            this.expectedRequest = expectedRequest;
+        }
+
+        @Override
+        public void onReceive(Object msg) throws Exception {
+            if (expectedRequest==null) {
+                fail("Unexpected identity feed request received");
+            }
+
+            if (msg instanceof RegisterNewPatient) {
+                assertEquals(expectedRequest.expectedRequest.getBirthDate(), ((RegisterNewPatient) msg).getBirthDate());
+                assertEquals(expectedRequest.expectedRequest.getFamilyName(), ((RegisterNewPatient) msg).getFamilyName());
+                assertEquals(expectedRequest.expectedRequest.getGender(), ((RegisterNewPatient) msg).getGender());
+                assertEquals(expectedRequest.expectedRequest.getGivenName(), ((RegisterNewPatient) msg).getGivenName());
+                assertEquals(expectedRequest.expectedRequest.getLanguageCommunicationCode(), ((RegisterNewPatient) msg).getLanguageCommunicationCode());
+                assertEquals(expectedRequest.expectedRequest.getTelecom(), ((RegisterNewPatient) msg).getTelecom());
+                assertEquals(expectedRequest.expectedRequest.getPatientIdentifiers(), ((RegisterNewPatient) msg).getPatientIdentifiers());
+                expectedRequest.seen++;
+
+                RegisterNewPatientResponse response = new RegisterNewPatientResponse((RegisterNewPatient)msg, true, null);
+                getSender().tell(response, getSelf());
+            } else {
+                fail("Unexpected message received " + msg);
+            }
+        }
+    }
+
+    private static class ResolveIdentifierUnknownPatientMock extends UntypedActor {
+        @Override
+        public void onReceive(Object msg) throws Exception {
+            if (msg instanceof ResolvePatientIdentifier) {
+                ResolvePatientIdentifierResponse response = new ResolvePatientIdentifierResponse((ResolvePatientIdentifier)msg, null);
+                getSender().tell(response, getSelf());
+            } else {
+                fail("Unexpected message received " + msg);
+            }
+        }
+    }
+
     static ActorSystem system;
     MediatorConfig testConfig;
     ActorRef resolvePIDDummy;
     ActorRef resolveHWIDDummy;
     ActorRef resolveFIDDummy;
+    ActorRef identityFeedDummy;
     final FiniteDuration waitTime = Duration.create(60, TimeUnit.SECONDS);
 
 
@@ -112,6 +163,14 @@ public class ProvideAndRegisterOrchestrationActorTest {
         }
     }
 
+    private void setupIdentityFeedMock() {
+        setupIdentityFeedMock(null);
+    }
+
+    private void setupIdentityFeedMock(DummyIdentityFeedReceiverActor.ExpectedRequest expectedRequest) {
+        identityFeedDummy = system.actorOf(Props.create(DummyIdentityFeedReceiverActor.class, expectedRequest));
+    }
+
     private void sendPnRMessage(ActorSystem system, ActorRef ref, String resource) throws Exception {
         sendPnRMessage(testConfig, system, ref, resource);
     }
@@ -120,7 +179,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
         InputStream testPnRIn = getClass().getClassLoader().getResourceAsStream(resource);
         final String testPnR = IOUtils.toString(testPnRIn);
 
-        ActorRef actor = system.actorOf(Props.create(ProvideAndRegisterOrchestrationActor.class, config, resolvePIDDummy, resolveHWIDDummy, resolveFIDDummy));
+        ActorRef actor = system.actorOf(Props.create(ProvideAndRegisterOrchestrationActor.class, config, resolvePIDDummy, resolveHWIDDummy, resolveFIDDummy, identityFeedDummy));
         OrchestrateProvideAndRegisterRequest testMsg = new OrchestrateProvideAndRegisterRequest(ref, ref, testPnR, null, null);
 
         actor.tell(testMsg, ref);
@@ -135,6 +194,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
         setupResolvePatientIDMock(expectedPatientIds);
         setupResolveHCWIDMock();
         setupResolveFacilityIDMock();
+        setupIdentityFeedMock();
 
         new JavaTestKit(system) {{
             sendPnRMessage(system, getRef(), "pnr1.xml");
@@ -152,6 +212,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
         setupResolvePatientIDMock();
         setupResolveHCWIDMock(expectedHealthcareWorkerIds);
         setupResolveFacilityIDMock();
+        setupIdentityFeedMock();
 
         new JavaTestKit(system) {{
             sendPnRMessage(system, getRef(), "pnr1.xml");
@@ -169,6 +230,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
         setupResolvePatientIDMock();
         setupResolveHCWIDMock();
         setupResolveFacilityIDMock(expectedFacilityIds);
+        setupIdentityFeedMock();
 
         new JavaTestKit(system) {{
             sendPnRMessage(system, getRef(), "pnr1.xml");
@@ -182,6 +244,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
         setupResolvePatientIDMock();
         setupResolveHCWIDMock();
         setupResolveFacilityIDMock();
+        setupIdentityFeedMock();
 
         new JavaTestKit(system) {{
             sendPnRMessage(system, getRef(), "pnr1.xml");
@@ -200,6 +263,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
         setupResolvePatientIDMock();
         setupResolveHCWIDMock();
         setupResolveFacilityIDMock();
+        setupIdentityFeedMock();
 
         new JavaTestKit(system) {{
             sendPnRMessage(system, getRef(), "pnr1.xml");
@@ -219,6 +283,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
         resolvePIDDummy = system.actorOf(Props.create(DummyResolveIdentifierActor.class, ResolvePatientIdentifier.class, ResolvePatientIdentifierResponse.class, responseId));
         setupResolveHCWIDMock();
         setupResolveFacilityIDMock();
+        setupIdentityFeedMock();
 
         new JavaTestKit(system) {{
             sendPnRMessage(system, getRef(), "pnr1.xml");
@@ -234,6 +299,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
         Identifier responseId = null;
         resolveHWIDDummy = system.actorOf(Props.create(DummyResolveIdentifierActor.class, ResolveHealthcareWorkerIdentifier.class, ResolveHealthcareWorkerIdentifierResponse.class, responseId));
         setupResolveFacilityIDMock();
+        setupIdentityFeedMock();
 
         new JavaTestKit(system) {{
             sendPnRMessage(system, getRef(), "pnr1.xml");
@@ -249,6 +315,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
         setupResolveHCWIDMock();
         Identifier responseId = null;
         resolveFIDDummy = system.actorOf(Props.create(DummyResolveIdentifierActor.class, ResolveFacilityIdentifier.class, ResolveFacilityIdentifierResponse.class, responseId));
+        setupIdentityFeedMock();
 
         new JavaTestKit(system) {{
             sendPnRMessage(system, getRef(), "pnr1.xml");
@@ -272,6 +339,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
         setupResolvePatientIDMock();
         setupResolveHCWIDMock(expectedHealthcareWorkerIds);
         setupResolveFacilityIDMock();
+        setupIdentityFeedMock();
 
         new JavaTestKit(system) {{
             sendPnRMessage(config, system, getRef(), "pnr1.xml");
@@ -297,6 +365,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
         setupResolvePatientIDMock();
         setupResolveHCWIDMock();
         setupResolveFacilityIDMock(expectedFacilityIds);
+        setupIdentityFeedMock();
 
         new JavaTestKit(system) {{
             sendPnRMessage(config, system, getRef(), "pnr1.xml");
@@ -316,6 +385,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
         setupResolvePatientIDMock(expectedPatientIds);
         setupResolveHCWIDMock();
         setupResolveFacilityIDMock();
+        setupIdentityFeedMock();
 
         new JavaTestKit(system) {{
             sendPnRMessage(system, getRef(), "pnr2.xml");
@@ -328,6 +398,86 @@ public class ProvideAndRegisterOrchestrationActorTest {
                     fail("Resolve id request for " + er.getIdentifier() + " was sent more than once");
                 }
             }
+        }};
+    }
+
+    @Test
+    public void shouldSendIdentityFeedRequestIfResolveFailed() throws Exception {
+        final MediatorConfig config = new MediatorConfig();
+        config.setProperties("mediator-unit-test.properties");
+        config.getProperties().setProperty("pnr.sendParseOrchestration", "false");
+        config.getProperties().setProperty("pnr.patients.autoRegister", "true");
+
+        resolvePIDDummy = system.actorOf(Props.create(ResolveIdentifierUnknownPatientMock.class));
+        setupResolveHCWIDMock();
+        setupResolveFacilityIDMock();
+
+        List<Identifier> expectedPatientIds = new ArrayList<>();
+        expectedPatientIds.add(new Identifier("76cc765a442f410", new AssigningAuthority("", "1.3.6.1.4.1.21367.2005.3.7")));
+        expectedPatientIds.add(new Identifier("1111111111", new AssigningAuthority("", "1.2.3")));
+        RegisterNewPatient registerNewPatient = new RegisterNewPatient(
+                null, null, expectedPatientIds, null, null, null, null, null, null
+        );
+
+        final DummyIdentityFeedReceiverActor.ExpectedRequest expectedRequest = new DummyIdentityFeedReceiverActor.ExpectedRequest();
+        expectedRequest.expectedRequest = registerNewPatient;
+        setupIdentityFeedMock(expectedRequest);
+
+        new JavaTestKit(system) {{
+            sendPnRMessage(config, system, getRef(), "pnr1.xml");
+            expectMsgClass(waitTime, FinishRequest.class);
+
+            assertEquals(1, expectedRequest.seen);
+        }};
+    }
+
+    @Test
+    public void shouldSendIdentityFeedRequestUsingDemographicsFromCDAAtLevel2IfResolveFailed() throws Exception {
+        final MediatorConfig config = new MediatorConfig();
+        config.setProperties("mediator-unit-test.properties");
+        config.getProperties().setProperty("pnr.sendParseOrchestration", "false");
+        config.getProperties().setProperty("pnr.patients.autoRegister", "true");
+
+        resolvePIDDummy = system.actorOf(Props.create(ResolveIdentifierUnknownPatientMock.class));
+        setupResolveHCWIDMock();
+        setupResolveFacilityIDMock();
+
+        List<Identifier> expectedPatientIds = new ArrayList<>();
+        expectedPatientIds.add(new Identifier("76cc765a442f410", new AssigningAuthority("", "1.3.6.1.4.1.21367.2005.3.7")));
+        expectedPatientIds.add(new Identifier("1111111111", new AssigningAuthority("", "1.2.3")));
+        RegisterNewPatient registerNewPatient = new RegisterNewPatient(
+                null, null, expectedPatientIds, "Jane", "Doe", "F", "19860101", "tel:+27832222222", "eng"
+        );
+
+        final DummyIdentityFeedReceiverActor.ExpectedRequest expectedRequest = new DummyIdentityFeedReceiverActor.ExpectedRequest();
+        expectedRequest.expectedRequest = registerNewPatient;
+        setupIdentityFeedMock(expectedRequest);
+
+        new JavaTestKit(system) {{
+            sendPnRMessage(config, system, getRef(), "pnr3.xml");
+            expectMsgClass(waitTime, FinishRequest.class);
+
+            assertEquals(1, expectedRequest.seen);
+        }};
+    }
+
+    @Test
+    public void shouldNotSendIdentityFeedRequestIfDisabledInConfig() throws Exception {
+        final MediatorConfig config = new MediatorConfig();
+        config.setProperties("mediator-unit-test.properties");
+        config.getProperties().setProperty("pnr.sendParseOrchestration", "false");
+        config.getProperties().setProperty("pnr.patients.autoRegister", "false");
+
+        resolvePIDDummy = system.actorOf(Props.create(ResolveIdentifierUnknownPatientMock.class));
+        setupResolveHCWIDMock();
+        setupResolveFacilityIDMock();
+        setupIdentityFeedMock();
+
+        new JavaTestKit(system) {{
+            sendPnRMessage(config, system, getRef(), "pnr1.xml");
+            FinishRequest fr = expectMsgClass(waitTime, FinishRequest.class);
+
+            assertEquals(new Integer(HttpStatus.SC_BAD_REQUEST), fr.getResponseStatus());
         }};
     }
 }

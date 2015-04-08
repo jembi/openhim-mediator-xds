@@ -30,12 +30,13 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * Actor for processing PIX messages - will create and process resolve patient identifier requests (QBP_Q21),
- * resolving a requested identifier in a particular domain. The identifier returned will be null if the id could not be resolved.
+ * Actor for processing PIX messages.
+ * <br/><br/>
+ * Supports identifier cross-referencing requests (QBP_Q21) and Patient Identity Feed (ADT_A04).
  * <br/><br/>
  * Messages supported:
  * <ul>
- * <li>ResolvePatientIdentifier - responds with ResolvePatientIdentifierResponse</li>
+ * <li>ResolvePatientIdentifier - responds with ResolvePatientIdentifierResponse. The identifier returned will be null if the id could not be resolved.</li>
  * <li>RegisterNewPatient - responds with RegisterNewPatientResponse</li>
  * </ul>
  */

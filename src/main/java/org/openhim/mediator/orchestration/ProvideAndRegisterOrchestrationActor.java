@@ -46,7 +46,7 @@ import java.util.*;
  * <br/><br/>
  * Messages supported:
  * <ul>
- *     <li>EnrichPnRRequestMessage: responds with EnrichPnRRequestMessageResponse</li>
+ *     <li>OrchestrateProvideAndRegisterRequest: responds with OrchestrateProvideAndRegisterRequestResponse</li>
  * </ul>
  */
 public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
@@ -143,17 +143,26 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
     private final ActorRef resolveHealthcareWorkerIdHandler;
     private final ActorRef resolveFacilityIdHandler;
     private final ActorRef registerNewPatientHandler;
-    private OrchestrateProvideAndRegisterRequest originalRequest;
-
-    private String messageBuffer;
     private String xForwardedFor;
+
+    private OrchestrateProvideAndRegisterRequest originalRequest;
     private ProvideAndRegisterDocumentSetRequestType parsedRequest;
+    private String messageBuffer;
+
     private List<IdentifierMapping> enterprisePatientIds = new ArrayList<>();
     private List<IdentifierMapping> enterpriseHealthcareWorkerIds = new ArrayList<>();
     private List<IdentifierMapping> enterpriseFacilityIds = new ArrayList<>();
 
+
+    /* auto-register patient */
+
+    //Should only ever attempt a single registration
     private boolean sentNewRegistrationRequest = false;
+    //Identifiers that couldn't be resolved
     private List<IdentifierMapping> failedPatientIds = new ArrayList<>();
+
+    /* */
+
 
 
     public ProvideAndRegisterOrchestrationActor(MediatorConfig config, ActorRef resolvePatientIdHandler,
@@ -188,8 +197,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
                 resolveEnterpriseIdentifiers();
             }
         } catch (ValidationException ex) {
-            FinishRequest fr = new FinishRequest(ex.getMessage(), "text/plain", HttpStatus.SC_BAD_REQUEST);
-            originalRequest.getRequestHandler().tell(fr, getSelf());
+            respondBadRequest(ex.getMessage());
             outcome = false;
         } finally {
             sendAuditMessage(ATNAAudit.TYPE.PROVIDE_AND_REGISTER_RECEIVED, outcome);
@@ -458,8 +466,10 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         }
 
         RegisterNewPatient registerNewPatient = buildRegistrationRequestFromCDA(document);
-        registerNewPatientHandler.tell(registerNewPatient, getSelf());
-        sentNewRegistrationRequest = true;
+        if (registerNewPatient!=null) {
+            registerNewPatientHandler.tell(registerNewPatient, getSelf());
+            sentNewRegistrationRequest = true;
+        }
     }
 
 
@@ -511,8 +521,8 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         originalRequest.getRespondTo().tell(response, getSelf());
     }
 
-    private void respondBadRequest(String errors) {
-        FinishRequest fr = new FinishRequest(errors, "text/plain", HttpStatus.SC_BAD_REQUEST);
+    private void respondBadRequest(String error) {
+        FinishRequest fr = new FinishRequest(error, "text/plain", HttpStatus.SC_BAD_REQUEST);
         originalRequest.getRequestHandler().tell(fr, getSelf());
     }
 
@@ -594,8 +604,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
                 resolvePatientIdHandler.tell(mapping.resolveRequestMessage, getSelf());
             }
         } else {
-            FinishRequest fr = new FinishRequest(response.getErr(), "text/plain", HttpStatus.SC_BAD_REQUEST);
-            response.getOriginalRequest().getRequestHandler().tell(fr, getSelf());
+            respondBadRequest(response.getErr());
         }
     }
 
@@ -627,11 +636,14 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
     public void onReceive(Object msg) throws Exception {
         if (msg instanceof OrchestrateProvideAndRegisterRequest) {
             log.info("Orchestrating XDS.b Provide and Register request");
+
             originalRequest = (OrchestrateProvideAndRegisterRequest) msg;
             xForwardedFor = ((OrchestrateProvideAndRegisterRequest) msg).getXForwardedFor();
             parseRequest((OrchestrateProvideAndRegisterRequest) msg);
-        } else if (SimpleMediatorResponse.isInstanceOf(ProvideAndRegisterDocumentSetRequestType.class, msg)) {
+
+        } else if (SimpleMediatorResponse.isInstanceOf(ProvideAndRegisterDocumentSetRequestType.class, msg)) { //response from parser
             processParsedRequest(((SimpleMediatorResponse<ProvideAndRegisterDocumentSetRequestType>) msg).getResponseObject());
+
         } else if (msg instanceof ResolvePatientIdentifierResponse) {
             processResolvedPatientId((ResolvePatientIdentifierResponse) msg);
             checkAndRespondIfAllResolved();
@@ -641,8 +653,10 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         } else if (msg instanceof ResolveFacilityIdentifierResponse) {
             processResolvedFacilityId((ResolveFacilityIdentifierResponse) msg);
             checkAndRespondIfAllResolved();
+
         } else if (msg instanceof RegisterNewPatientResponse) {
             processRegisterNewPatientResponse((RegisterNewPatientResponse) msg);
+
         } else {
             unhandled(msg);
         }

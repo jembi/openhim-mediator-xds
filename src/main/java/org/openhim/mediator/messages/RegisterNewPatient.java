@@ -10,11 +10,13 @@ import akka.actor.ActorRef;
 import org.openhim.mediator.datatypes.Identifier;
 import org.openhim.mediator.engine.messages.MediatorRequestMessage;
 
+import java.util.List;
+
 /**
  * Create a new patient demographic record.
  */
 public class RegisterNewPatient extends MediatorRequestMessage {
-    private final Identifier patientIdentifier;
+    private final List<Identifier> patientIdentifiers;
     private final String givenName;
     private final String familyName;
     private final String gender;
@@ -22,10 +24,9 @@ public class RegisterNewPatient extends MediatorRequestMessage {
     private final String telecom;
     private final String languageCommunicationCode;
 
-    public RegisterNewPatient(ActorRef requestHandler, ActorRef respondTo, String orchestration, String correlationId,
-                              Identifier patientIdentifier, String givenName, String familyName, String gender, String birthDate, String telecom, String languageCommunicationCode) {
-        super(requestHandler, respondTo, orchestration, correlationId);
-        this.patientIdentifier = patientIdentifier;
+    public RegisterNewPatient(ActorRef requestHandler, ActorRef respondTo, List<Identifier> patientIdentifiers, String givenName, String familyName, String gender, String birthDate, String telecom, String languageCommunicationCode) {
+        super(requestHandler, respondTo);
+        this.patientIdentifiers = patientIdentifiers;
         this.givenName = givenName;
         this.familyName = familyName;
         this.gender = gender;
@@ -34,8 +35,8 @@ public class RegisterNewPatient extends MediatorRequestMessage {
         this.languageCommunicationCode = languageCommunicationCode;
     }
 
-    public Identifier getPatientIdentifier() {
-        return patientIdentifier;
+    public List<Identifier> getPatientIdentifiers() {
+        return patientIdentifiers;
     }
 
     public String getTelecom() {

@@ -64,7 +64,6 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
 
     private class PatientIdentifierMapping extends IdentifierMapping {
         List<DocumentNode> nodes = new ArrayList<>();
-        boolean processedNewRegistrationRequest = false;
 
         public PatientIdentifierMapping(Identifier fromId, DocumentNode node) {
             nodes.add(node);
@@ -141,6 +140,9 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
     private List<IdentifierMapping> enterprisePatientIds = new ArrayList<>();
     private List<IdentifierMapping> enterpriseHealthcareWorkerIds = new ArrayList<>();
     private List<IdentifierMapping> enterpriseFacilityIds = new ArrayList<>();
+
+    private boolean sentNewRegistrationRequest = false;
+    private List<IdentifierMapping> failedPatientIds = new ArrayList<>();
 
 
     public ProvideAndRegisterOrchestrationActor(MediatorConfig config, ActorRef resolvePatientIdHandler,
@@ -372,51 +374,9 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         }
     }
 
-    private RegisterNewPatient buildRegistrationRequestFromCDA(String correlationId, Identifier patientId, String document) {
-        //TODO
-        return new RegisterNewPatient(
-                originalRequest.getRequestHandler(), getSelf(), "Register new patient", correlationId,
-                patientId, "Sally", "Patient", "F", "19700528", "+27731234567", "en"
-        );
-    }
-
-    private void autoRegisterPatient(ResolvePatientIdentifierResponse response) {
-        String document = originalRequest.getDocument(); //is mime?
-        if (document == null) { //else get from parsed message
-            if (parsedRequest.getDocument()!=null && parsedRequest.getDocument().size()>=1) {
-                document = new String(parsedRequest.getDocument().get(0).getValue());
-            }
-        }
-
-        if (document == null) {
-            log.info("Unable to retrieve message document. Marking patientId as resolved.");
-            enrichResolvedId(response, enterprisePatientIds);
-        } else {
-            Identifier patientId = ((ResolvePatientIdentifier) response.getOriginalRequest()).getIdentifier();
-            RegisterNewPatient registerNewPatient = buildRegistrationRequestFromCDA(response.getOriginalRequest().getCorrelationId(), patientId, document);
-            registerNewPatientHandler.tell(registerNewPatient, getSelf());
-        }
-    }
-
-    private boolean hasNewRegistrationAlreadyBeenProcessed(String correlationId) {
-        for (IdentifierMapping mapping : enterprisePatientIds) {
-            if (mapping.correlationId.equals(correlationId)) {
-                return ((PatientIdentifierMapping)mapping).processedNewRegistrationRequest;
-            }
-        }
-        return false;
-    }
 
     private void processResolvedPatientId(ResolvePatientIdentifierResponse response) {
-        if (Util.isPropertyTrue(config, "pnr.patients.autoRegister") && response.getIdentifier()==null &&
-                !hasNewRegistrationAlreadyBeenProcessed(response.getOriginalRequest().getCorrelationId())) {
-
-            log.info("Unable to resolve patient id. Sending registration message to Client Registry.");
-            autoRegisterPatient(response);
-
-        } else {
-            enrichResolvedId(response, enterprisePatientIds);
-        }
+        enrichResolvedId(response, enterprisePatientIds);
     }
 
     private void processResolvedHealthcareWorkerId(ResolveHealthcareWorkerIdentifierResponse response) {
@@ -435,7 +395,55 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         }
     }
 
+
+    private List<Identifier> getAllKnownPatientIdentifiers() {
+        List<Identifier> result = new LinkedList<>();
+        for (IdentifierMapping mapping : enterprisePatientIds) {
+            result.add(mapping.fromId);
+        }
+        return result;
+    }
+
+    private RegisterNewPatient buildRegistrationRequestFromCDA(String document) {
+        //TODO
+        return new RegisterNewPatient(
+                originalRequest.getRequestHandler(), getSelf(), getAllKnownPatientIdentifiers(), "Sally", "Patient", "F", "19700528", "+27731234567", "en"
+        );
+    }
+
+    private void autoRegisterPatient() {
+        String document = originalRequest.getDocument(); //is mime?
+        if (document == null) { //else get from parsed message
+            if (parsedRequest.getDocument()!=null && parsedRequest.getDocument().size()>=1) {
+                document = new String(parsedRequest.getDocument().get(0).getValue());
+            }
+        }
+
+        RegisterNewPatient registerNewPatient = buildRegistrationRequestFromCDA(document);
+        registerNewPatientHandler.tell(registerNewPatient, getSelf());
+        sentNewRegistrationRequest = true;
+    }
+
+
+    private void checkForFailedPatientIdResolutionsAndAutoRegisterIfSo() {
+        for (IdentifierMapping mapping : enterprisePatientIds) {
+            if (!mapping.successful) {
+                mapping.resolved = false;
+                failedPatientIds.add(mapping);
+            }
+        }
+
+        if (failedPatientIds.size()>0) {
+            log.info("Failed to resolve patient identifier(s). Sending patient registration message to Client Registry.");
+            autoRegisterPatient();
+        }
+    }
+
     private boolean checkAndRespondIfAllResolved() {
+        if (Util.isPropertyTrue(config, "pnr.patients.autoRegister") && areAllIdentifiersResolvedForList(enterprisePatientIds) && !sentNewRegistrationRequest) {
+            checkForFailedPatientIdResolutionsAndAutoRegisterIfSo();
+        }
+
         if (areAllIdentifiersResolved()) {
             boolean outcome = false;
             try {
@@ -542,14 +550,10 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
 
     private void processRegisterNewPatientResponse(RegisterNewPatientResponse response) {
         if (response.isSuccessful()) {
-            log.info("Patient successfully registered. Resending resolve identifier request");
+            log.info("Patient successfully registered. Resending resolve identifier request(s).");
 
-            for (IdentifierMapping mapping : enterprisePatientIds) {
-                if (mapping.correlationId.equals(response.getOriginalRequest().getCorrelationId())) {
-                    ((PatientIdentifierMapping)mapping).processedNewRegistrationRequest = true;
-                    resolvePatientIdHandler.tell(mapping.resolveRequestMessage, getSelf());
-                    break;
-                }
+            for (IdentifierMapping mapping : failedPatientIds) {
+                resolvePatientIdHandler.tell(mapping.resolveRequestMessage, getSelf());
             }
         } else {
             FinishRequest fr = new FinishRequest(response.getErr(), "text/plain", HttpStatus.SC_BAD_REQUEST);

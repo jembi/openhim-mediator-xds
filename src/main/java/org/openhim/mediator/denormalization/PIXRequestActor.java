@@ -17,6 +17,7 @@ import ca.uhn.hl7v2.model.v25.message.ADT_A01;
 import ca.uhn.hl7v2.model.v25.message.QBP_Q21;
 import ca.uhn.hl7v2.model.v25.message.RSP_K23;
 import ca.uhn.hl7v2.model.v25.segment.MSH;
+import ca.uhn.hl7v2.model.v25.segment.PID;
 import ca.uhn.hl7v2.parser.GenericParser;
 import ca.uhn.hl7v2.parser.Parser;
 import ca.uhn.hl7v2.util.Terser;
@@ -123,10 +124,12 @@ public class PIXRequestActor extends UntypedActor {
 
         t.set("EVN-2", dateFormatDay.format(new Date()));
 
-        t.set("PID-3-1", msg.getPatientIdentifier().getIdentifier());
-        t.set("PID-3-4", msg.getPatientIdentifier().getAssigningAuthority().getAssigningAuthority());
-        t.set("PID-3-4-2", msg.getPatientIdentifier().getAssigningAuthority().getAssigningAuthorityId());
-        t.set("PID-3-4-3", "ISO");
+        for (int i=0; i<msg.getPatientIdentifiers().size(); i++) {
+            t.set("PID-3(" + i + ")-1", msg.getPatientIdentifiers().get(i).getIdentifier());
+            t.set("PID-3(" + i + ")-4", msg.getPatientIdentifiers().get(i).getAssigningAuthority().getAssigningAuthority());
+            t.set("PID-3(" + i + ")-4-2", msg.getPatientIdentifiers().get(i).getAssigningAuthority().getAssigningAuthorityId());
+            t.set("PID-3(" + i + ")-4-3", "ISO");
+        }
         t.set("PID-5-1", msg.getFamilyName());
         t.set("PID-5-2", msg.getGivenName());
         t.set("PID-7", msg.getBirthDate());
@@ -285,9 +288,6 @@ public class PIXRequestActor extends UntypedActor {
             sendPIXRequest((ResolvePatientIdentifier) msg);
         } else if (msg instanceof RegisterNewPatient) {
             log.info("Received request to register new patient demographic record");
-            if (log.isDebugEnabled()) {
-                log.debug("Patient ID: " + ((RegisterNewPatient) msg).getPatientIdentifier());
-            }
             sendPIXRequest((RegisterNewPatient) msg);
         } else if (msg instanceof MediatorSocketResponse) {
             processResponse((MediatorSocketResponse) msg);

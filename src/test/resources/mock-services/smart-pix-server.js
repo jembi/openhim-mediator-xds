@@ -39,20 +39,34 @@ net.createServer(function(c) {
     if (chunk.toString().indexOf(footer) != -1) {
       console.log('Recieved message:\n' + data.replace('\r', '\n') + '\n\n');
 
-      var regex = /(PID|QPD)\|[\w\s]*\|[\w\s\-\.]*\|([\w\.\^\&]+)\|/g;
-      var pid = regex.exec(data)[2];
-      if (pid.indexOf('ISO') > -1) {
-        pid = pid.substr(0, pid.indexOf('ISO'));
+      var regex = /(PID|QPD)\|[\w\s]*\|[\w\s\-\.]*\|([\w\.\^\&\~]+)\|/g;
+
+      var pids = regex.exec(data)[2].split('~');
+      var _i, _len;
+      for (_i = 0, _len = pids.length; _i < _len; _i++) {
+        if (pids[_i].indexOf('ISO') > -1) {
+          pids[_i] = pids[_i].substr(0, pids[_i].indexOf('ISO'));
+        }
       }
-      console.log("PID: " + pid);
+      console.log("PID: " + pids);
 
       if (data.indexOf('ADT^A04^ADT_A01') > -1) {
         console.log('New patient registration');
 
-        knownPatients[pid] = true;
+        for (_i = 0, _len = pids.length; _i < _len; _i++) {
+          knownPatients[pids[_i]] = true;
+        }
         c.end(header + cannedResponseAckNewRegistration + footer);
+
       } else {
-        if (knownPatients[pid]) {
+        var known = false;
+        for (_i = 0, _len = pids.length; _i < _len; _i++) {
+          if (knownPatients[pids[_i]]) {
+            known = true;
+          }
+        }
+
+        if (known) {
           console.log('Patient is known');
           c.end(header + cannedResponseKnown + footer);
         } else {

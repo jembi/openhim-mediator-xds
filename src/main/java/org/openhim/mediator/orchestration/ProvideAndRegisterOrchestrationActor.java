@@ -14,6 +14,7 @@ import akka.event.LoggingAdapter;
 import ihe.iti.xds_b._2007.ProvideAndRegisterDocumentSetRequestType;
 import ihe.iti.xds_b._2007.ObjectFactory;
 import oasis.names.tc.ebxml_regrep.xsd.rim._3.*;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
 import org.dcm4chee.xds2.common.XDSConstants;
 import org.dcm4chee.xds2.infoset.util.InfosetUtil;
@@ -21,16 +22,23 @@ import org.openhim.mediator.Util;
 import org.openhim.mediator.datatypes.AssigningAuthority;
 import org.openhim.mediator.datatypes.Identifier;
 import org.openhim.mediator.engine.MediatorConfig;
-import org.openhim.mediator.engine.messages.ExceptError;
-import org.openhim.mediator.engine.messages.FinishRequest;
-import org.openhim.mediator.engine.messages.SimpleMediatorRequest;
-import org.openhim.mediator.engine.messages.SimpleMediatorResponse;
+import org.openhim.mediator.engine.messages.*;
 import org.openhim.mediator.exceptions.CXParseException;
 import org.openhim.mediator.exceptions.ValidationException;
 import org.openhim.mediator.messages.*;
 import org.openhim.mediator.normalization.ParseProvideAndRegisterRequestActor;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 import javax.xml.bind.JAXBException;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -38,7 +46,7 @@ import java.util.*;
  * <br/><br/>
  * Messages supported:
  * <ul>
- *     <li>EnrichPnRRequestMessage: responds with EnrichPnRRequestMessageResponse</li>
+ *     <li>OrchestrateProvideAndRegisterRequest: responds with OrchestrateProvideAndRegisterRequestResponse</li>
  * </ul>
  */
 public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
@@ -50,17 +58,26 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         boolean successful = false;
         Identifier fromId;
         String correlationId;
+        MediatorRequestMessage resolveRequestMessage;
 
         abstract void resolve(Identifier resolvedId);
     }
 
-    private class PatientIdentifierMapping extends IdentifierMapping {
+    private class DocumentNode {
         String documentNodeURN;
         RegistryObjectType documentNode;
 
-        public PatientIdentifierMapping(Identifier fromId, String documentNodeURN, RegistryObjectType documentNode) {
+        public DocumentNode(String documentNodeURN, RegistryObjectType documentNode) {
             this.documentNodeURN = documentNodeURN;
             this.documentNode = documentNode;
+        }
+    }
+
+    private class PatientIdentifierMapping extends IdentifierMapping {
+        List<DocumentNode> nodes = new ArrayList<>();
+
+        public PatientIdentifierMapping(Identifier fromId, DocumentNode node) {
+            nodes.add(node);
             this.fromId = fromId;
         }
 
@@ -69,7 +86,9 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
             resolved = true;
 
             if (resolvedId!=null) {
-                InfosetUtil.setExternalIdentifierValue(documentNodeURN, resolvedId.toString(), documentNode);
+                for (DocumentNode node : nodes) {
+                    InfosetUtil.setExternalIdentifierValue(node.documentNodeURN, resolvedId.toString(), node.documentNode);
+                }
                 successful = true;
             }
         }
@@ -123,21 +142,41 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
     private final ActorRef resolvePatientIdHandler;
     private final ActorRef resolveHealthcareWorkerIdHandler;
     private final ActorRef resolveFacilityIdHandler;
-    private OrchestrateProvideAndRegisterRequest originalRequest;
-
-    private String messageBuffer;
+    private final ActorRef registerNewPatientHandler;
     private String xForwardedFor;
+
+    private OrchestrateProvideAndRegisterRequest originalRequest;
     private ProvideAndRegisterDocumentSetRequestType parsedRequest;
+    private String messageBuffer;
+
     private List<IdentifierMapping> enterprisePatientIds = new ArrayList<>();
     private List<IdentifierMapping> enterpriseHealthcareWorkerIds = new ArrayList<>();
     private List<IdentifierMapping> enterpriseFacilityIds = new ArrayList<>();
 
 
-    public ProvideAndRegisterOrchestrationActor(MediatorConfig config, ActorRef resolvePatientIdHandler, ActorRef resolveHealthcareWorkerIdHandler, ActorRef resolveFacilityIdHandler) {
+    /* auto-register patient */
+
+    //Should only ever attempt a single registration
+    private boolean sentNewRegistrationRequest = false;
+    //Identifiers that couldn't be resolved
+    private List<IdentifierMapping> failedPatientIds = new ArrayList<>();
+
+    /* */
+
+
+
+    public ProvideAndRegisterOrchestrationActor(MediatorConfig config, ActorRef resolvePatientIdHandler,
+                                                ActorRef resolveHealthcareWorkerIdHandler, ActorRef resolveFacilityIdHandler) {
+        this(config, resolvePatientIdHandler, resolveHealthcareWorkerIdHandler, resolveFacilityIdHandler, resolvePatientIdHandler);
+    }
+
+    public ProvideAndRegisterOrchestrationActor(MediatorConfig config, ActorRef resolvePatientIdHandler, ActorRef resolveHealthcareWorkerIdHandler,
+                                                ActorRef resolveFacilityIdHandler, ActorRef registerNewPatientHandler) {
         this.config = config;
         this.resolvePatientIdHandler = resolvePatientIdHandler;
         this.resolveHealthcareWorkerIdHandler = resolveHealthcareWorkerIdHandler;
         this.resolveFacilityIdHandler = resolveFacilityIdHandler;
+        this.registerNewPatientHandler = registerNewPatientHandler;
     }
 
 
@@ -158,8 +197,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
                 resolveEnterpriseIdentifiers();
             }
         } catch (ValidationException ex) {
-            FinishRequest fr = new FinishRequest(ex.getMessage(), "text/plain", HttpStatus.SC_BAD_REQUEST);
-            originalRequest.getRequestHandler().tell(fr, getSelf());
+            respondBadRequest(ex.getMessage());
             outcome = false;
         } finally {
             sendAuditMessage(ATNAAudit.TYPE.PROVIDE_AND_REGISTER_RECEIVED, outcome);
@@ -168,18 +206,32 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
 
     private void initIdentifiersToBeResolvedMappings() throws ValidationException {
         readPatientIdentifiers();
-        readHealthcareWorkerAndFacilityIdentifiers();
+
+        if (Util.isPropertyTrue(config, "pnr.providers.enrich", true) || Util.isPropertyTrue(config, "pnr.facilities.enrich", true)) {
+            readHealthcareWorkerAndFacilityIdentifiers();
+        }
+    }
+
+    private void addPatientIdToResolve(Identifier id, DocumentNode node) {
+        for (IdentifierMapping mapping : enterprisePatientIds) {
+            if (mapping.fromId.equals(id)) {
+                ((PatientIdentifierMapping)mapping).nodes.add(node);
+                return;
+            }
+        }
+
+        enterprisePatientIds.add(new PatientIdentifierMapping(id, node));
     }
 
     private void readPatientIdentifiers() throws CXParseException {
         RegistryPackageType regPac = InfosetUtil.getRegistryPackage(parsedRequest.getSubmitObjectsRequest(), XDSConstants.UUID_XDSSubmissionSet);
         String CX = InfosetUtil.getExternalIdentifierValue(XDSConstants.UUID_XDSSubmissionSet_patientId, regPac);
-        enterprisePatientIds.add(new PatientIdentifierMapping(new Identifier(CX), XDSConstants.UUID_XDSSubmissionSet_patientId, regPac));
+        addPatientIdToResolve(new Identifier(CX), new DocumentNode(XDSConstants.UUID_XDSSubmissionSet_patientId, regPac));
 
         List<ExtrinsicObjectType> eos = InfosetUtil.getExtrinsicObjects(parsedRequest.getSubmitObjectsRequest());
         for (ExtrinsicObjectType eo : eos) {
             String documentPatCX = InfosetUtil.getExternalIdentifierValue(XDSConstants.UUID_XDSDocumentEntry_patientId, eo);
-            enterprisePatientIds.add(new PatientIdentifierMapping(new Identifier(documentPatCX), XDSConstants.UUID_XDSDocumentEntry_patientId, eo));
+            addPatientIdToResolve(new Identifier(documentPatCX), new DocumentNode(XDSConstants.UUID_XDSDocumentEntry_patientId, eo));
         }
     }
 
@@ -242,12 +294,12 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
                     throw new ValidationException("Local provider and facility identifiers could not be extracted from the XDS metadata");
                 }
 
-                if (localProviderID!=null) {
+                if (localProviderID!=null && Util.isPropertyTrue(config, "pnr.providers.enrich", true)) {
                     Identifier id = new Identifier(localProviderID, new AssigningAuthority("", localProviderIDAssigningAuthority));
                     enterpriseHealthcareWorkerIds.add(new HealthcareWorkerIdentifierMapping(id, personSlotValList));
                 }
 
-                if (localLocationID!=null) {
+                if (localLocationID!=null && Util.isPropertyTrue(config, "pnr.facilities.enrich", true)) {
                     Identifier id = new Identifier(localLocationID, new AssigningAuthority("", localLocationIDAssigningAuthority));
                     enterpriseFacilityIds.add(new FacilityIdentifierMapping(id, localLocationName, institutionSlotValList));
                 }
@@ -295,10 +347,13 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         for (IdentifierMapping mapping : enterprisePatientIds) {
             String correlationId = UUID.randomUUID().toString();
             mapping.correlationId = correlationId;
+
             ResolvePatientIdentifier msg = new ResolvePatientIdentifier(
                     originalRequest.getRequestHandler(), getSelf(), correlationId, mapping.fromId, targetPatientIdAuthority
             );
             resolvePatientIdHandler.tell(msg, getSelf());
+
+            mapping.resolveRequestMessage = msg;
         }
     }
 
@@ -310,10 +365,13 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         for (IdentifierMapping mapping : enterpriseHealthcareWorkerIds) {
             String correlationId = UUID.randomUUID().toString();
             mapping.correlationId = correlationId;
+
             ResolveHealthcareWorkerIdentifier msg = new ResolveHealthcareWorkerIdentifier(
                     originalRequest.getRequestHandler(), getSelf(), correlationId, mapping.fromId, targetHealthcareWorkerIdAuthority
             );
             resolveHealthcareWorkerIdHandler.tell(msg, getSelf());
+
+            mapping.resolveRequestMessage = msg;
         }
     }
 
@@ -325,12 +383,16 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         for (IdentifierMapping mapping : enterpriseFacilityIds) {
             String correlationId = UUID.randomUUID().toString();
             mapping.correlationId = correlationId;
+
             ResolveFacilityIdentifier msg = new ResolveFacilityIdentifier(
                     originalRequest.getRequestHandler(), getSelf(), correlationId, mapping.fromId, targetFacilityIdAuthority
             );
             resolveFacilityIdHandler.tell(msg, getSelf());
+
+            mapping.resolveRequestMessage = msg;
         }
     }
+
 
     private void processResolvedPatientId(ResolvePatientIdentifierResponse response) {
         enrichResolvedId(response, enterprisePatientIds);
@@ -352,7 +414,84 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         }
     }
 
+
+    private List<Identifier> getAllKnownPatientIdentifiers() {
+        List<Identifier> result = new LinkedList<>();
+        for (IdentifierMapping mapping : enterprisePatientIds) {
+            result.add(mapping.fromId);
+        }
+        return result;
+    }
+
+    /**
+     * Attempt to read the message document at CDA level 2 for any available patient demographic information.
+     *
+     * It only attempts to read anything it can and won't fail if the document isn't a CDA.
+     */
+    private RegisterNewPatient buildRegistrationRequestFromCDA(String document) {
+        try {
+            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            Document doc = builder.parse(IOUtils.toInputStream(document));
+            XPath xpath = XPathFactory.newInstance().newXPath();
+
+            String givenName = xpath.compile("ClinicalDocument/recordTarget/patientRole/patient/name/given").evaluate(doc);
+            String lastName = xpath.compile("ClinicalDocument/recordTarget/patientRole/patient/name/family").evaluate(doc);
+            String gender = xpath.compile("ClinicalDocument/recordTarget/patientRole/patient/administrativeGenderCode/@code").evaluate(doc);
+            String birthdate = xpath.compile("ClinicalDocument/recordTarget/patientRole/patient/birthTime/@value").evaluate(doc);
+            String telecom = xpath.compile("ClinicalDocument/recordTarget/patientRole/telecom/@value").evaluate(doc);
+            String languagePreference = xpath.compile("ClinicalDocument/recordTarget/patientRole/patient/languageCommunication/languageCode/@code").evaluate(doc);
+
+            return new RegisterNewPatient(
+                    originalRequest.getRequestHandler(), getSelf(), getAllKnownPatientIdentifiers(), givenName, lastName, gender, birthdate, telecom, languagePreference
+            );
+
+        } catch (SAXException ex) {
+            //Not a failure if not a valid CDA document
+            return new RegisterNewPatient(
+                    originalRequest.getRequestHandler(), getSelf(), getAllKnownPatientIdentifiers(), null, null, null, null, null, null
+            );
+
+        } catch (XPathExpressionException | ParserConfigurationException | IOException ex) {
+            originalRequest.getRequestHandler().tell(new ExceptError(ex), getSelf());
+            return null;
+        }
+    }
+
+    private void autoRegisterPatient() {
+        String document = originalRequest.getDocument(); //is mime?
+        if (document == null) { //else get from parsed message
+            if (parsedRequest.getDocument()!=null && parsedRequest.getDocument().size()>=1) {
+                document = new String(parsedRequest.getDocument().get(0).getValue());
+            }
+        }
+
+        RegisterNewPatient registerNewPatient = buildRegistrationRequestFromCDA(document);
+        if (registerNewPatient!=null) {
+            registerNewPatientHandler.tell(registerNewPatient, getSelf());
+            sentNewRegistrationRequest = true;
+        }
+    }
+
+
+    private void checkForFailedPatientIdResolutionsAndAutoRegisterIfSo() {
+        for (IdentifierMapping mapping : enterprisePatientIds) {
+            if (!mapping.successful) {
+                mapping.resolved = false;
+                failedPatientIds.add(mapping);
+            }
+        }
+
+        if (failedPatientIds.size()>0) {
+            log.info("Failed to resolve patient identifier(s). Sending patient registration message to Client Registry.");
+            autoRegisterPatient();
+        }
+    }
+
     private boolean checkAndRespondIfAllResolved() {
+        if (Util.isPropertyTrue(config, "pnr.patients.autoRegister") && areAllIdentifiersResolvedForList(enterprisePatientIds) && !sentNewRegistrationRequest) {
+            checkForFailedPatientIdResolutionsAndAutoRegisterIfSo();
+        }
+
         if (areAllIdentifiersResolved()) {
             boolean outcome = false;
             try {
@@ -382,8 +521,8 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         originalRequest.getRespondTo().tell(response, getSelf());
     }
 
-    private void respondBadRequest(String errors) {
-        FinishRequest fr = new FinishRequest(errors, "text/plain", HttpStatus.SC_BAD_REQUEST);
+    private void respondBadRequest(String error) {
+        FinishRequest fr = new FinishRequest(error, "text/plain", HttpStatus.SC_BAD_REQUEST);
         originalRequest.getRequestHandler().tell(fr, getSelf());
     }
 
@@ -457,6 +596,18 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         return result;
     }
 
+    private void processRegisterNewPatientResponse(RegisterNewPatientResponse response) {
+        if (response.isSuccessful()) {
+            log.info("Patient successfully registered. Resending resolve identifier request(s).");
+
+            for (IdentifierMapping mapping : failedPatientIds) {
+                resolvePatientIdHandler.tell(mapping.resolveRequestMessage, getSelf());
+            }
+        } else {
+            respondBadRequest(response.getErr());
+        }
+    }
+
     private void sendAuditMessage(ATNAAudit.TYPE type, boolean outcome) {
         try {
             ATNAAudit audit = new ATNAAudit(type);
@@ -485,11 +636,14 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
     public void onReceive(Object msg) throws Exception {
         if (msg instanceof OrchestrateProvideAndRegisterRequest) {
             log.info("Orchestrating XDS.b Provide and Register request");
+
             originalRequest = (OrchestrateProvideAndRegisterRequest) msg;
             xForwardedFor = ((OrchestrateProvideAndRegisterRequest) msg).getXForwardedFor();
             parseRequest((OrchestrateProvideAndRegisterRequest) msg);
-        } else if (SimpleMediatorResponse.isInstanceOf(ProvideAndRegisterDocumentSetRequestType.class, msg)) {
+
+        } else if (SimpleMediatorResponse.isInstanceOf(ProvideAndRegisterDocumentSetRequestType.class, msg)) { //response from parser
             processParsedRequest(((SimpleMediatorResponse<ProvideAndRegisterDocumentSetRequestType>) msg).getResponseObject());
+
         } else if (msg instanceof ResolvePatientIdentifierResponse) {
             processResolvedPatientId((ResolvePatientIdentifierResponse) msg);
             checkAndRespondIfAllResolved();
@@ -499,6 +653,10 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         } else if (msg instanceof ResolveFacilityIdentifierResponse) {
             processResolvedFacilityId((ResolveFacilityIdentifierResponse) msg);
             checkAndRespondIfAllResolved();
+
+        } else if (msg instanceof RegisterNewPatientResponse) {
+            processRegisterNewPatientResponse((RegisterNewPatientResponse) msg);
+
         } else {
             unhandled(msg);
         }

@@ -6,6 +6,8 @@
 
 package org.openhim.mediator;
 
+import org.openhim.mediator.engine.MediatorConfig;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -78,5 +80,16 @@ public class Util {
         }
 
         return stringBuilder.toString();
+    }
+
+    public static boolean isPropertyTrue(MediatorConfig config, String key) {
+        return isPropertyTrue(config, key, false);
+    }
+
+    public static boolean isPropertyTrue(MediatorConfig config, String key, boolean valueIfNotExist) {
+        if (config==null || config.getProperty(key)==null) {
+            return valueIfNotExist;
+        }
+        return config.getProperty(key).equalsIgnoreCase("true");
     }
 }

@@ -11,8 +11,8 @@ import org.openhim.mediator.datatypes.Identifier;
 import java.util.List;
 
 public class ATNAAudit {
-    public static enum TYPE {
-        PIX_REQUEST, REGISTRY_QUERY_RECEIVED, REGISTRY_QUERY_ENRICHED, PROVIDE_AND_REGISTER_RECEIVED, PROVIDE_AND_REGISTER_ENRICHED
+    public enum TYPE {
+        PIX_REQUEST, PIX_IDENTITY_FEED, REGISTRY_QUERY_RECEIVED, REGISTRY_QUERY_ENRICHED, PROVIDE_AND_REGISTER_RECEIVED, PROVIDE_AND_REGISTER_ENRICHED
     }
 
     private final TYPE type;

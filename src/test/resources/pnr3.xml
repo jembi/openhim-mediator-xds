@@ -1,0 +1,308 @@
+<!--
+  ~ This Source Code Form is subject to the terms of the Mozilla Public
+  ~ License, v. 2.0. If a copy of the MPL was not distributed with this
+  ~ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  -->
+
+<xdsb:ProvideAndRegisterDocumentSetRequest xmlns:xdsb="urn:ihe:iti:xds-b:2007">
+    <lcm:SubmitObjectsRequest xmlns:lcm="urn:oasis:names:tc:ebxml-regrep:xsd:lcm:3.0">
+        <rim:RegistryObjectList xmlns:rim="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0">
+            <rim:ExtrinsicObject id="Document01" mimeType="text/plain"
+                objectType="urn:uuid:7edca82f-054d-47f2-a032-9b2a5b5186c1">
+                <rim:Slot name="creationTime">
+                    <rim:ValueList>
+                        <rim:Value>20051224</rim:Value>
+                    </rim:ValueList>
+                </rim:Slot>
+                <rim:Slot name="languageCode">
+                    <rim:ValueList>
+                        <rim:Value>en-us</rim:Value>
+                    </rim:ValueList>
+                </rim:Slot>
+                <rim:Slot name="serviceStartTime">
+                    <rim:ValueList>
+                        <rim:Value>200412230800</rim:Value>
+                    </rim:ValueList>
+                </rim:Slot>
+                <rim:Slot name="serviceStopTime">
+                    <rim:ValueList>
+                        <rim:Value>200412230801</rim:Value>
+                    </rim:ValueList>
+                </rim:Slot>
+                <rim:Slot name="sourcePatientId">
+                    <rim:ValueList>
+                        <rim:Value>89765a87b^^^&amp;3.4.5&amp;ISO</rim:Value>
+                    </rim:ValueList>
+                </rim:Slot>
+                <rim:Slot name="sourcePatientInfo">
+                    <rim:ValueList>
+                        <rim:Value>PID-3|pid1^^^&amp;1.2.3&amp;ISO</rim:Value>
+                        <rim:Value>PID-5|Doe^Jane^^^</rim:Value>
+                        <rim:Value>PID-7|19860101</rim:Value>
+                        <rim:Value>PID-8|F</rim:Value>
+                        <rim:Value>PID-11|100 Main St^^Metropolis^Il^44130^USA</rim:Value>
+                    </rim:ValueList>
+                </rim:Slot>
+                <rim:Name>
+                    <rim:LocalizedString value="Physical"/>
+                </rim:Name>
+                <rim:Description/>
+                <rim:Classification
+                    classificationScheme="urn:uuid:93606bcf-9494-43ec-9b4e-a7748d1a838d"
+                    classifiedObject="Document01" nodeRepresentation=""
+                    objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification"
+                    id="id_1">
+                    <rim:Slot name="authorPerson">
+                        <rim:ValueList>
+                            <rim:Value>pro111^Smitty^Gerald^^^^^^&amp;1.2.3&amp;ISO</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                    <rim:Slot name="authorInstitution">
+                        <rim:ValueList>
+                            <rim:Value>Some Hospital^^^^^&amp;1.2.3.4.5.6.7.8.9.1789&amp;ISO^^^^45</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                    <rim:Slot name="authorRole">
+                        <rim:ValueList>
+                            <rim:Value>Attending</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                    <rim:Slot name="authorSpecialty">
+                        <rim:ValueList>
+                            <rim:Value>Orthopedic</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                </rim:Classification>
+                <rim:Classification
+                    classificationScheme="urn:uuid:93606bcf-9494-43ec-9b4e-a7748d1a838d"
+                    classifiedObject="Document01" nodeRepresentation=""
+                    objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification"
+                    id="id_2">
+                    <rim:Slot name="authorPerson">
+                        <rim:ValueList>
+                            <rim:Value>pro112^Dopplemeyer^Sherry^^^^^^&amp;1.2.3&amp;ISO</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                    <rim:Slot name="authorInstitution">
+                        <rim:ValueList>
+                            <rim:Value>Cleveland Clinic</rim:Value>
+                            <rim:Value>Another Hospital^^^^^&amp;1.2.3.4.5.6.7.8.9.1789&amp;ISO^^^^53</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                    <rim:Slot name="authorRole">
+                        <rim:ValueList>
+                            <rim:Value>Primary Surgeon</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                    <rim:Slot name="authorSpecialty">
+                        <rim:ValueList>
+                            <rim:Value>Orthopedic</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                </rim:Classification>
+                <rim:Classification
+                    classificationScheme="urn:uuid:41a5887f-8865-4c09-adf7-e362475b143a"
+                    classifiedObject="Document01" nodeRepresentation="History and Physical"
+                    objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification"
+                    id="id_3">
+                    <rim:Slot name="codingScheme">
+                        <rim:ValueList>
+                            <rim:Value>Connect-a-thon classCodes</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                    <rim:Name>
+                        <rim:LocalizedString value="History and Physical"/>
+                    </rim:Name>
+                </rim:Classification>
+                <rim:Classification
+                    classificationScheme="urn:uuid:f4f85eac-e6cb-4883-b524-f2705394840f"
+                    classifiedObject="Document01"
+                    nodeRepresentation="1.3.6.1.4.1.21367.2006.7.101"
+                    objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification"
+                    id="id_4">
+                    <rim:Slot name="codingScheme">
+                        <rim:ValueList>
+                            <rim:Value>Connect-a-thon confidentialityCodes</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                    <rim:Name>
+                        <rim:LocalizedString value="Clinical-Staff"/>
+                    </rim:Name>
+                </rim:Classification>
+                <rim:Classification
+                    classificationScheme="urn:uuid:a09d5840-386c-46f2-b5ad-9c3699a4309d"
+                    classifiedObject="Document01" nodeRepresentation="testFormat"
+                    objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification"
+                    id="id_5">
+                    <rim:Slot name="codingScheme">
+                        <rim:ValueList>
+                            <rim:Value>testCodes</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                    <rim:Name>
+                        <rim:LocalizedString value="Test Format"/>
+                    </rim:Name>
+                </rim:Classification>
+                <rim:Classification
+                    classificationScheme="urn:uuid:f33fb8ac-18af-42cc-ae0e-ed0b0bdb91e1"
+                    classifiedObject="Document01" nodeRepresentation="Outpatient"
+                    objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification"
+                    id="id_6">
+                    <rim:Slot name="codingScheme">
+                        <rim:ValueList>
+                            <rim:Value>Connect-a-thon
+                                healthcareFacilityTypeCodes</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                    <rim:Name>
+                        <rim:LocalizedString value="Outpatient"/>
+                    </rim:Name>
+                </rim:Classification>
+                <rim:Classification
+                    classificationScheme="urn:uuid:cccf5598-8b07-4b77-a05e-ae952c785ead"
+                    classifiedObject="Document01" nodeRepresentation="General Medicine"
+                    objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification"
+                    id="id_7">
+                    <rim:Slot name="codingScheme">
+                        <rim:ValueList>
+                            <rim:Value>Connect-a-thon practiceSettingCodes</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                    <rim:Name>
+                        <rim:LocalizedString value="General Medicine"/>
+                    </rim:Name>
+                </rim:Classification>
+                <rim:Classification
+                    classificationScheme="urn:uuid:f0306f51-975f-434e-a61c-c59651d33983"
+                    classifiedObject="Document01" nodeRepresentation="testType"
+                    objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification"
+                    id="id_8">
+                    <rim:Slot name="codingScheme">
+                        <rim:ValueList>
+                            <rim:Value>testCodes</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                    <rim:Name>
+                        <rim:LocalizedString value="Test Type"/>
+                    </rim:Name>
+                </rim:Classification>
+                <rim:ExternalIdentifier
+                    identificationScheme="urn:uuid:58a6f841-87b3-4a3e-92fd-a8ffeff98427"
+                    value="1111111111^^^&amp;1.2.3&amp;ISO"
+                    objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier"
+                    id="id_9" registryObject="Document01">
+                    <rim:Name>
+                        <rim:LocalizedString value="XDSDocumentEntry.patientId"/>
+                    </rim:Name>
+                </rim:ExternalIdentifier>
+                <rim:ExternalIdentifier
+                    identificationScheme="urn:uuid:2e82c1f6-a085-4c72-9da3-8640a32e42ab"
+                    value="2009.9.1.2455"
+                    objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier"
+                    id="id_10" registryObject="Document01">
+                    <rim:Name>
+                        <rim:LocalizedString value="XDSDocumentEntry.uniqueId"/>
+                    </rim:Name>
+                </rim:ExternalIdentifier>
+            </rim:ExtrinsicObject>
+            <rim:RegistryPackage id="SubmissionSet01"
+                objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:RegistryPackage">
+                <rim:Slot name="submissionTime">
+                    <rim:ValueList>
+                        <rim:Value>20041225235050</rim:Value>
+                    </rim:ValueList>
+                </rim:Slot>
+                <rim:Name>
+                    <rim:LocalizedString value="Physical"/>
+                </rim:Name>
+                <rim:Description>
+                    <rim:LocalizedString value="Annual physical"/>
+                </rim:Description>
+                <rim:Classification
+                    classificationScheme="urn:uuid:a7058bb9-b4e4-4307-ba5b-e3f0ab85e12d"
+                    classifiedObject="SubmissionSet01" nodeRepresentation=""
+                    objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification"
+                    id="id_11">
+                    <rim:Slot name="authorPerson">
+                        <rim:ValueList>
+                            <rim:Value>^Dopplemeyer^Sherry^^^</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                    <rim:Slot name="authorInstitution">
+                        <rim:ValueList>
+                            <rim:Value>Cleveland Clinic</rim:Value>
+                            <rim:Value>Berea Community</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                    <rim:Slot name="authorRole">
+                        <rim:ValueList>
+                            <rim:Value>Primary Surgon</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                    <rim:Slot name="authorSpecialty">
+                        <rim:ValueList>
+                            <rim:Value>Orthopedic</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                </rim:Classification>
+                <rim:Classification
+                    classificationScheme="urn:uuid:aa543740-bdda-424e-8c96-df4873be8500"
+                    classifiedObject="SubmissionSet01"
+                    nodeRepresentation="History and Physical"
+                    objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification"
+                    id="id_12">
+                    <rim:Slot name="codingScheme">
+                        <rim:ValueList>
+                            <rim:Value>Connect-a-thon contentTypeCodes</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                    <rim:Name>
+                        <rim:LocalizedString value="History and Physical"/>
+                    </rim:Name>
+                </rim:Classification>
+                <rim:ExternalIdentifier
+                    identificationScheme="urn:uuid:96fdda7c-d067-4183-912e-bf5ee74998a8"
+                    value="2009.9.1.2456"
+                    objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier"
+                    id="id_13" registryObject="SubmissionSet01">
+                    <rim:Name>
+                        <rim:LocalizedString value="XDSSubmissionSet.uniqueId"/>
+                    </rim:Name>
+                </rim:ExternalIdentifier>
+                <rim:ExternalIdentifier
+                    identificationScheme="urn:uuid:554ac39e-e3fe-47fe-b233-965d2a147832"
+                    value="1.3.6.1.4.1.21367.2009.1.2.1"
+                    objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier"
+                    id="id_14" registryObject="SubmissionSet01">
+                    <rim:Name>
+                        <rim:LocalizedString value="XDSSubmissionSet.sourceId"/>
+                    </rim:Name>
+                </rim:ExternalIdentifier>
+                <rim:ExternalIdentifier
+                    identificationScheme="urn:uuid:6b5aea1a-874d-4603-a4bc-96a0a7b38446"
+                    value="76cc765a442f410^^^&amp;1.3.6.1.4.1.21367.2005.3.7&amp;ISO"
+                    objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier"
+                    id="id_15" registryObject="SubmissionSet01">
+                    <rim:Name>
+                        <rim:LocalizedString value="XDSSubmissionSet.patientId"/>
+                    </rim:Name>
+                </rim:ExternalIdentifier>
+            </rim:RegistryPackage>
+            <rim:Classification classifiedObject="SubmissionSet01"
+                classificationNode="urn:uuid:a54d6aa5-d40d-43f9-88c5-b4633d873bdd"
+                id="ID_1216346_1"
+                objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification"/>
+            <rim:Association
+                associationType="urn:oasis:names:tc:ebxml-regrep:AssociationType:HasMember"
+                sourceObject="SubmissionSet01" targetObject="Document01" id="ID_1216346_2"
+                objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Association">
+                <rim:Slot name="SubmissionSetStatus">
+                    <rim:ValueList>
+                        <rim:Value>Original</rim:Value>
+                    </rim:ValueList>
+                </rim:Slot>
+            </rim:Association>
+        </rim:RegistryObjectList>
+    </lcm:SubmitObjectsRequest>
+    <xdsb:Document id="Document01">PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4NCjxDbGluaWNhbERvY3VtZW50IHhtbG5zPSJ1cm46aGw3LW9yZzp2MyIgeG1sbnM6Y2RhPSJ1cm46aGw3LW9yZzp2MyIgeG1sbnM6dm9jPSJ1cm46aGw3LW9yZzp2My92b2MiIHhtbG5zOnhzaT0iaHR0cDovL3d3dy53My5vcmcvMjAwMS9YTUxTY2hlbWEtaW5zdGFuY2UiIHhtbG5zOnBjYz0idXJuOmloZTpwY2M6aGw3djMiIHhtbG5zOmxhYj0idXJuOm9pZDoxLjMuNi4xLjQuMS4xOTM3Ni4xLjMuMiIgeG1sbnM6c2R0Yz0idXJuOmhsNy1vcmc6c2R0YyIgeHNpOnNjaGVtYUxvY2F0aW9uPSJ1cm46aGw3LW9yZzp2MyBDREEueHNkIj4NCjx0eXBlSWQgcm9vdD0iMi4xNi44NDAuMS4xMTM4ODMuMS4zIiBleHRlbnNpb249IlBPQ0RfSEQwMDAwNDAiLz4NCjx0ZW1wbGF0ZUlkIHJvb3Q9IjIuMTYuODQwLjEuMTEzODgzLjEwIiBleHRlbnNpb249IklNUExfQ0RBUjJfTEVWRUwxIi8+DQo8aWQgcm9vdD0iYTQ2YTczZWQtOWE0MC00N2EzLWIwZDYtOGVhOGMzYWEwMTBlIi8+DQo8Y29kZSBjb2RlPSI1MTg1NS01IiBjb2RlU3lzdGVtPSIyLjE2Ljg0MC4xLjExMzg4My42LjEiIGNvZGVTeXN0ZW1OYW1lPSJMT0lOQyIvPg0KPHRpdGxlPlRlc3QgQ0RBIGZvciBPcGVuSElNIFhEUy5iIE1lZGlhdG9yPC90aXRsZT4NCjxlZmZlY3RpdmVUaW1lIHZhbHVlPSIyMDE0MDYwOTEyMTIzOCIvPg0KPGNvbmZpZGVudGlhbGl0eUNvZGUgY29kZT0iTiIgZGlzcGxheU5hbWU9Ik5vcm1hbCIgY29kZVN5c3RlbT0iMi4xNi44NDAuMS4xMTM4ODMuNS4yNSIgY29kZVN5c3RlbU5hbWU9IkNvbmZpZGVudGlhbGl0eSIvPg0KPGxhbmd1YWdlQ29kZSBjb2RlPSJlbi1VSyIvPg0KPHJlY29yZFRhcmdldD4NCiAgPHBhdGllbnRSb2xlPg0KICAgIDxpZCBleHRlbnNpb249IjExMTExMTExMTFeXl4mYW1wOzEuMi4zJmFtcDtJU08iIHJvb3Q9IjUyNmVmOWMzLTZmMTgtNDIwYS1iYzUzLTliNzMzOTIwYmM2NyIvPg0KICAgIDx0ZWxlY29tIHZhbHVlPSJ0ZWw6KzI3ODMyMjIyMjIyIi8+DQogICAgPHBhdGllbnQ+DQogICAgICA8bmFtZT4NCiAgICAgICAgPGdpdmVuPkphbmU8L2dpdmVuPg0KICAgICAgICA8ZmFtaWx5PkRvZTwvZmFtaWx5Pg0KICAgICAgPC9uYW1lPg0KICAgICAgPGFkbWluaXN0cmF0aXZlR2VuZGVyQ29kZSBjb2RlPSJGIiBjb2RlU3lzdGVtPSIyLjE2Ljg0MC4xLjExMzg4My41LjEiLz4NCiAgICAgIDxiaXJ0aFRpbWUgdmFsdWU9IjE5ODYwMTAxIi8+DQogICAgICA8bGFuZ3VhZ2VDb21tdW5pY2F0aW9uPg0KICAgICAgICA8bGFuZ3VhZ2VDb2RlIGNvZGU9ImVuZyIvPg0KICAgICAgICA8cHJlZmVyZW5jZUluZCB2YWx1ZT0idHJ1ZSIvPg0KICAgICAgPC9sYW5ndWFnZUNvbW11bmljYXRpb24+DQogICAgPC9wYXRpZW50Pg0KICA8L3BhdGllbnRSb2xlPg0KPC9yZWNvcmRUYXJnZXQ+DQo8YXV0aG9yPg0KICA8dGltZSB2YWx1ZT0iMjAxNDA3MjExMjAxMDEiLz4NCiAgPGFzc2lnbmVkQXV0aG9yPg0KICAgIDxpZCByb290PSI4MzNmMjg1Ni1iOWUxLTRmNTQtODY5NC1jNzRjNDI4Mzc1NWYiLz4NCiAgICA8YWRkci8+DQogICAgPHRlbGVjb20gdmFsdWU9InRlbDorMjc4MzExMTExMTExIiAvPg0KICAgIDxhc3NpZ25lZFBlcnNvbi8+DQogICAgPHJlcHJlc2VudGVkT3JnYW5pemF0aW9uPg0KICAgICAgPGlkIGV4dGVuc2lvbj0iODg3NzMzIiByb290PSI5YTU2MGQ2MS04NWYxLTRkN2ItOGVlMi0wOTBkMjkwMGY4MzYiLz4NCiAgICA8L3JlcHJlc2VudGVkT3JnYW5pemF0aW9uPg0KICA8L2Fzc2lnbmVkQXV0aG9yPg0KPC9hdXRob3I+DQo8ZG9jdW1lbnRhdGlvbk9mPg0KICA8c2VydmljZUV2ZW50IGNsYXNzQ29kZT0iUENQUiI+DQogICAgPGVmZmVjdGl2ZVRpbWUgdmFsdWU9IjIwMTQwNzIxMTIwMTAzIi8+DQogIDwvc2VydmljZUV2ZW50Pg0KPC9kb2N1bWVudGF0aW9uT2Y+DQo8Y29tcG9uZW50Pg0KICA8c3RydWN0dXJlZEJvZHk+DQogICAgPGNvbXBvbmVudD4NCiAgICAgIDxzZWN0aW9uPg0KICAgICAgICA8Y29kZSBjb2RlPSI1NzA2MC02IiBkaXNwbGF5TmFtZT0iRXN0aW1hdGVkIGRhdGUgb2YgZGVsaXZlcnkgTmFycmF0aXZlIiBjb2RlU3lzdGVtPSIyLjE2Ljg0MC4xLjExMzg4My42LjEiIGNvZGVTeXN0ZW1OYW1lPSJMT0lOQyIvPg0KICAgICAgICA8dGV4dD4NCiAgICAgICAgICA8dGFibGU+DQogICAgICAgICAgICA8dGhlYWQ+DQogICAgICAgICAgICAgIDx0cj4NCiAgICAgICAgICAgICAgICA8dGQ+UHJlZ25hbmN5IHN0YXR1czwvdGQ+DQogICAgICAgICAgICAgICAgPHRkPk5vdGUgRGF0ZTwvdGQ+DQogICAgICAgICAgICAgICAgPHRkPkRlbGl2ZXJ5IERhdGUgKEVzdGltYXRlZCk8L3RkPg0KICAgICAgICAgICAgICA8L3RyPg0KICAgICAgICAgICAgPC90aGVhZD4NCiAgICAgICAgICAgIDx0Ym9keT4NCiAgICAgICAgICAgICAgPCEtLSBlLmcuIC0tPg0KICAgICAgICAgICAgICA8dHI+DQogICAgICAgICAgICAgICAgPHRkPlByZWduYW5jeSBjb25maXJtZWQ8L3RkPg0KICAgICAgICAgICAgICAgIDx0ZD4yMDE0LTA3LTIwPC90ZD4NCiAgICAgICAgICAgICAgPC90cj4NCiAgICAgICAgICAgIDwvdGJvZHk+DQogICAgICAgICAgPC90YWJsZT4NCiAgICAgICAgPC90ZXh0Pg0KICAgICAgICA8ZW50cnk+DQogICAgICAgICAgPG9ic2VydmF0aW9uIGNsYXNzQ29kZT0iT0JTIiBtb29kQ29kZT0iRVZOIj4NCiAgICAgICAgICAgIDxjb2RlIGNvZGU9IjExNDQ5LTYiIGRpc3BsYXlOYW1lPSJQcmVnbmFuY3kgc3RhdHVzIiBjb2RlU3lzdGVtPSIyLjE2Ljg0MC4xLjExMzg4My42LjEiIGNvZGVTeXN0ZW1OYW1lPSJMT0lOQyIvPg0KICAgICAgICAgICAgPHRleHQvPg0KICAgICAgICAgICAgPHN0YXR1c0NvZGUgY29kZT0iY29tcGxldGVkIi8+DQogICAgICAgICAgICA8ZWZmZWN0aXZlVGltZSB2YWx1ZT0iMjAxNDA3MjExMjAxMDQiLz4NCiAgICAgICAgICAgIDx2YWx1ZSB4c2k6dHlwZT0iQ0UiIGNvZGU9Ijc3Mzg2MDA2IiBkaXNwbGF5TmFtZT0iUHJlZ25hbmN5IGNvbmZpcm1lZCIgY29kZVN5c3RlbT0iMi4xNi44NDAuMS4xMTM4ODMuNi45NiIgY29kZVN5c3RlbU5hbWU9IlNOT01FRCBDVCIvPg0KICAgICAgICAgICAgPGVudHJ5UmVsYXRpb25zaGlwIHR5cGVDb2RlPSJTUFJUIiBpbnZlcnNpb25JbmQ9InRydWUiPg0KICAgICAgICAgICAgICA8b2JzZXJ2YXRpb24gY2xhc3NDb2RlPSJPQlMiIG1vb2RDb2RlPSJFVk4iPg0KICAgICAgICAgICAgICAgIDxjb2RlIGNvZGU9IjExNzc4LTgiIGRpc3BsYXlOYW1lPSJEZWxpdmVyeSBkYXRlIEVzdGltYXRlZCIgY29kZVN5c3RlbT0iMi4xNi44NDAuMS4xMTM4ODMuNi4xIiBjb2RlU3lzdGVtTmFtZT0iTE9JTkMiLz4NCiAgICAgICAgICAgICAgICA8dGV4dC8+DQogICAgICAgICAgICAgICAgPHN0YXR1c0NvZGUgY29kZT0iY29tcGxldGVkIi8+DQogICAgICAgICAgICAgICAgPHZhbHVlIHhzaTp0eXBlPSJUUyIgdmFsdWU9IjIwMTQwNzIxMTIwMTA1Ii8+DQogICAgICAgICAgICAgIDwvb2JzZXJ2YXRpb24+DQogICAgICAgICAgICA8L2VudHJ5UmVsYXRpb25zaGlwPg0KICAgICAgICAgIDwvb2JzZXJ2YXRpb24+DQogICAgICAgIDwvZW50cnk+DQogICAgICA8L3NlY3Rpb24+DQogICAgPC9jb21wb25lbnQ+DQogIDwvc3RydWN0dXJlZEJvZHk+DQo8L2NvbXBvbmVudD4NCjwvQ2xpbmljYWxEb2N1bWVudD4=</xdsb:Document>
+</xdsb:ProvideAndRegisterDocumentSetRequest>

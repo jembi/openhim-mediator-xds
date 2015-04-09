@@ -63,7 +63,7 @@ public class ATNAAuditingActor extends UntypedActor {
         eid.setEventActionCode("E");
         eid.setEventDateTime( ATNAUtil.newXMLGregorianCalendar() );
         eid.getEventTypeCode().add( ATNAUtil.buildCodedValueType("IHE Transactions", "ITI-9", "PIX Query") );
-        eid.setEventOutcomeIndicator(audit.getParticipantIdentifiers()!=null ? BigInteger.ZERO : new BigInteger("4"));
+        eid.setEventOutcomeIndicator(audit.getOutcome() ? BigInteger.ZERO : new BigInteger("4"));
         res.setEventIdentification(eid);
 
         res.getActiveParticipant().add( ATNAUtil.buildActiveParticipant(
@@ -75,11 +75,52 @@ public class ATNAAuditingActor extends UntypedActor {
 
         res.getAuditSourceIdentification().add(ATNAUtil.buildAuditSource("openhim"));
 
-        for (Identifier id : audit.getParticipantIdentifiers()) {
+        // Max of 1 patient is allowed
+        Identifier id = audit.getParticipantIdentifiers().get(0);
+        if (id!=null) {
             res.getParticipantObjectIdentification().add(
                     ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
             );
         }
+
+        res.getParticipantObjectIdentification().add(
+                ATNAUtil.buildParticipantObjectIdentificationType(
+                        UUID.randomUUID().toString(), (short)2, (short)24, "IHE Transactions", "ITI-9", "PIX Query",
+                        audit.getMessage(), new ATNAUtil.ParticipantObjectDetail("MSH-10", audit.getUniqueId().getBytes())
+                )
+        );
+
+        return ATNAUtil.marshallATNAObject(res);
+    }
+
+    protected String generateForPIXIdentityFeed(ATNAAudit audit) throws JAXBException {
+        AuditMessage res = new AuditMessage();
+
+        EventIdentificationType eid = new EventIdentificationType();
+        eid.setEventID( ATNAUtil.buildCodedValueType("DCM", "110110", "Patient Record") );
+        eid.setEventActionCode("C");
+        eid.setEventDateTime( ATNAUtil.newXMLGregorianCalendar() );
+        eid.getEventTypeCode().add( ATNAUtil.buildCodedValueType("IHE Transactions", "ITI-8", "Patient Identity Feed") );
+        eid.setEventOutcomeIndicator(audit.getOutcome() ? BigInteger.ZERO : new BigInteger("4"));
+        res.setEventIdentification(eid);
+
+        res.getActiveParticipant().add( ATNAUtil.buildActiveParticipant(
+                config.getProperty("pix.sendingFacility") + "|" + config.getProperty("pix.sendingApplication"),
+                ATNAUtil.getProcessID(), true, ATNAUtil.getHostIP(), (short)2, "DCM", "110153", "Source"));
+        res.getActiveParticipant().add( ATNAUtil.buildActiveParticipant(
+                config.getProperty("pix.receivingFacility") + "|" + config.getProperty("pix.receivingApplication"),
+                "2100", false, config.getProperty("pix.manager.host"), (short)1, "DCM", "110152", "Destination"));
+
+        res.getAuditSourceIdentification().add(ATNAUtil.buildAuditSource("openhim"));
+
+        // Max of 1 patient is allowed
+        Identifier id = audit.getParticipantIdentifiers().get(0);
+        if (id!=null) {
+            res.getParticipantObjectIdentification().add(
+                    ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
+            );
+        }
+
         res.getParticipantObjectIdentification().add(
                 ATNAUtil.buildParticipantObjectIdentificationType(
                         UUID.randomUUID().toString(), (short)2, (short)24, "IHE Transactions", "ITI-9", "PIX Query",
@@ -98,7 +139,7 @@ public class ATNAAuditingActor extends UntypedActor {
         eid.setEventActionCode("E");
         eid.setEventDateTime( ATNAUtil.newXMLGregorianCalendar() );
         eid.getEventTypeCode().add( ATNAUtil.buildCodedValueType("IHE Transactions", "ITI-18", "Registry Stored Query") );
-        eid.setEventOutcomeIndicator(!audit.getOutcome() ? BigInteger.ZERO : new BigInteger("4"));
+        eid.setEventOutcomeIndicator(audit.getOutcome() ? BigInteger.ZERO : new BigInteger("4"));
         res.setEventIdentification(eid);
 
         res.getActiveParticipant().add( ATNAUtil.buildActiveParticipant(ATNAUtil.WSA_REPLYTO_ANON, "client", true, audit.getSourceIP(), (short)2, "DCM", "110153", "Source"));
@@ -108,9 +149,11 @@ public class ATNAAuditingActor extends UntypedActor {
 
         // Max of 1 patient is allowed
         Identifier id = audit.getParticipantIdentifiers().get(0);
-        res.getParticipantObjectIdentification().add(
-                ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
-        );
+        if (id!=null) {
+            res.getParticipantObjectIdentification().add(
+                    ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
+            );
+        }
 
         List<ATNAUtil.ParticipantObjectDetail> pod = new ArrayList<>();
         pod.add(new ATNAUtil.ParticipantObjectDetail("QueryEncoding", "UTF-8".getBytes()));
@@ -133,7 +176,7 @@ public class ATNAAuditingActor extends UntypedActor {
         eid.setEventActionCode("E");
         eid.setEventDateTime( ATNAUtil.newXMLGregorianCalendar() );
         eid.getEventTypeCode().add( ATNAUtil.buildCodedValueType("IHE Transactions", "ITI-18", "Registry Stored Query") );
-        eid.setEventOutcomeIndicator(!audit.getOutcome() ? BigInteger.ZERO : new BigInteger("4"));
+        eid.setEventOutcomeIndicator(audit.getOutcome() ? BigInteger.ZERO : new BigInteger("4"));
         res.setEventIdentification(eid);
 
         String xdsRegistryHost = config.getProperty("xds.registry.host");
@@ -144,9 +187,11 @@ public class ATNAAuditingActor extends UntypedActor {
 
         // Max of 1 patient is allowed
         Identifier id = audit.getParticipantIdentifiers().get(0);
-        res.getParticipantObjectIdentification().add(
-                ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
-        );
+        if (id!=null) {
+            res.getParticipantObjectIdentification().add(
+                    ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
+            );
+        }
 
         List<ATNAUtil.ParticipantObjectDetail> pod = new ArrayList<>();
         pod.add(new ATNAUtil.ParticipantObjectDetail("QueryEncoding", "UTF-8".getBytes()));
@@ -178,7 +223,7 @@ public class ATNAAuditingActor extends UntypedActor {
         eid.setEventActionCode("C");
         eid.setEventDateTime( ATNAUtil.newXMLGregorianCalendar() );
         eid.getEventTypeCode().add( ATNAUtil.buildCodedValueType("IHE Transactions", "ITI-41", "Provide and Register Document Set-b") );
-        eid.setEventOutcomeIndicator(!audit.getOutcome() ? BigInteger.ZERO : new BigInteger("4"));
+        eid.setEventOutcomeIndicator(audit.getOutcome() ? BigInteger.ZERO : new BigInteger("4"));
         res.setEventIdentification(eid);
 
         res.getActiveParticipant().add( ATNAUtil.buildActiveParticipant(ATNAUtil.WSA_REPLYTO_ANON, "client", true, audit.getSourceIP(), (short)2, "DCM", "110153", "Source"));
@@ -188,9 +233,11 @@ public class ATNAAuditingActor extends UntypedActor {
 
         // Only one is allowed
         Identifier id = audit.getParticipantIdentifiers().get(0);
-        res.getParticipantObjectIdentification().add(
-                ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
-        );
+        if (id!=null) {
+            res.getParticipantObjectIdentification().add(
+                    ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
+            );
+        }
 
         List<ATNAUtil.ParticipantObjectDetail> pod = new ArrayList<>();
         pod.add(new ATNAUtil.ParticipantObjectDetail("QueryEncoding", "UTF-8".getBytes()));
@@ -224,9 +271,11 @@ public class ATNAAuditingActor extends UntypedActor {
 
         // Only one is allowed
         Identifier id = audit.getParticipantIdentifiers().get(0);
-        res.getParticipantObjectIdentification().add(
-                ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
-        );
+        if (id!=null) {
+            res.getParticipantObjectIdentification().add(
+                    ATNAUtil.buildParticipantObjectIdentificationType(id.toCX(), (short) 1, (short) 1, "RFC-3881", "2", "PatientNumber", null)
+            );
+        }
 
         res.getParticipantObjectIdentification().add(
                 ATNAUtil.buildParticipantObjectIdentificationType(
@@ -281,6 +330,8 @@ public class ATNAAuditingActor extends UntypedActor {
         switch (audit.getType()) {
             case PIX_REQUEST:
                 return generateForPIXRequest(audit);
+            case PIX_IDENTITY_FEED:
+                return generateForPIXIdentityFeed(audit);
             case REGISTRY_QUERY_RECEIVED:
                 return generateForRegistryQueryReceived(audit);
             case REGISTRY_QUERY_ENRICHED:

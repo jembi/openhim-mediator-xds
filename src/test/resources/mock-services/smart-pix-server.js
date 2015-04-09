@@ -21,7 +21,7 @@ var cannedResponseUnknown = 'MSH|^~\\&|MESA_XREF|XYZ_HOSPITAL|VEMR|Connectathon|
   + 'QAK|ef83b115-9626-462a-9cc0-1f4a95292b7e|AE\r\n'
   + 'QPD|IHE PIX Query|ef83b115-9626-462a-9cc0-1f4a95292b7e|1017295\S\\S\\S\ZAF\S\NI^^^SANID&SANID&SANID|^^^ECID&ECID&ECID';
 
-var cannedResponseAckNewRegistration = 'MSH|^~\\&|OPENEMPI_PIX|OPENHIE|TEST_HARNESS_A|TEST|20141222123736-0500||ACK^A01|ac1f100514a73135d483|P|2.3.1\r\n'
+var cannedResponseAckNewRegistration = 'MSH|^~\\&|OPENEMPI_PIX|OPENHIE|TEST_HARNESS_A|TEST|20141222123736-0500||ACK^A01|ac1f100514a73135d483|P|2.5\r\n'
   + 'MSA|AA|TEST-CR-04-20';
 
 var knownPatients = {};

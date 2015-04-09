@@ -46,7 +46,6 @@ public class PIXRequestActor extends UntypedActor {
     private MediatorConfig config;
 
     private Map<String, MediatorRequestMessage> originalRequests = new HashMap<>();
-    private Map<String, String> controlIds = new HashMap<>();
 
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmssZ");
     private static final SimpleDateFormat dateFormatDay = new SimpleDateFormat("yyyyMMdd");
@@ -57,11 +56,7 @@ public class PIXRequestActor extends UntypedActor {
     }
 
 
-    public String constructQBP_Q21(String correlationId, ResolvePatientIdentifier msg) throws HL7Exception {
-
-        QBP_Q21 qbp_q21 = new QBP_Q21();
-        Terser t = new Terser(qbp_q21);
-
+    private void constructBasicMSHSegment(String correlationId, Terser t) throws HL7Exception {
         MSH msh = (MSH) t.getSegment("MSH");
         t.set("MSH-1", "|");
         t.set("MSH-2", "^~\\&");
@@ -70,15 +65,20 @@ public class PIXRequestActor extends UntypedActor {
         t.set("MSH-5-1", config.getProperty("pix.receivingApplication"));
         t.set("MSH-6-1", config.getProperty("pix.receivingFacility"));
         msh.getDateTimeOfMessage().getTime().setValue(dateFormat.format(new Date()));
+        t.set("MSH-10", correlationId);
+        t.set("MSH-11-1", "P");
+        t.set("MSH-12-1-1", "2.5");
+    }
+
+    public String constructQBP_Q21(String correlationId, ResolvePatientIdentifier msg) throws HL7Exception {
+
+        QBP_Q21 qbp_q21 = new QBP_Q21();
+        Terser t = new Terser(qbp_q21);
+
+        constructBasicMSHSegment(correlationId, t);
         t.set("MSH-9-1", "QBP");
         t.set("MSH-9-2", "Q23");
         t.set("MSH-9-3", "QBP_Q21");
-        //MSH-10 message control id
-        String _msh10 = UUID.randomUUID().toString();
-        controlIds.put(correlationId, _msh10);
-        t.set("MSH-10", _msh10);
-        t.set("MSH-11-1", "P");
-        t.set("MSH-12-1-1", "2.5");
 
         t.set("QPD-1-1", "IHE PIX Query");
         t.set("QPD-2", UUID.randomUUID().toString());
@@ -104,23 +104,10 @@ public class PIXRequestActor extends UntypedActor {
         ADT_A01 adt_a04 = new ADT_A01();
         Terser t = new Terser(adt_a04);
 
-        MSH msh = (MSH) t.getSegment("MSH");
-        t.set("MSH-1", "|");
-        t.set("MSH-2", "^~\\&");
-        t.set("MSH-3-1", config.getProperty("pix.sendingApplication"));
-        t.set("MSH-4-1", config.getProperty("pix.sendingFacility"));
-        t.set("MSH-5-1", config.getProperty("pix.receivingApplication"));
-        t.set("MSH-6-1", config.getProperty("pix.receivingFacility"));
-        msh.getDateTimeOfMessage().getTime().setValue(dateFormat.format(new Date()));
+        constructBasicMSHSegment(correlationId, t);
         t.set("MSH-9-1", "ADT");
         t.set("MSH-9-2", "A04");
         t.set("MSH-9-3", "ADT_A01");
-        //MSH-10 message control id
-        String _msh10 = UUID.randomUUID().toString();
-        controlIds.put(correlationId, _msh10);
-        t.set("MSH-10", _msh10);
-        t.set("MSH-11-1", "P");
-        t.set("MSH-12-1-1", "2.5");
 
         t.set("EVN-2", dateFormatDay.format(new Date()));
 
@@ -220,7 +207,7 @@ public class PIXRequestActor extends UntypedActor {
         Parser parser = new GenericParser();
         Object parsedMsg = parser.parse(response);
         if (!(parsedMsg instanceof ACK)) {
-            return null;
+            return "Message response received in unsupported format: " + parsedMsg.getClass();
         }
 
         ACK msg = (ACK)parsedMsg;
@@ -271,7 +258,7 @@ public class PIXRequestActor extends UntypedActor {
             ATNAAudit audit = new ATNAAudit(type);
             audit.setMessage(((MediatorSocketRequest) msg.getOriginalRequest()).getBody());
             audit.setParticipantIdentifiers(Collections.singletonList(patientID));
-            audit.setUniqueId(controlIds.remove(msg.getOriginalRequest().getCorrelationId()));
+            audit.setUniqueId(msg.getOriginalRequest().getCorrelationId());
             audit.setOutcome(outcome);
 
             getContext().actorSelection(config.userPathFor("atna-auditing")).tell(audit, getSelf());

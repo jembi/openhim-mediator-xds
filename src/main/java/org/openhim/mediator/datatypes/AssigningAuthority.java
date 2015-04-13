@@ -9,13 +9,24 @@ package org.openhim.mediator.datatypes;
 public class AssigningAuthority {
     private String assigningAuthority;
     private String assigningAuthorityId;
+    private String assigningAuthorityIdType;
 
     public AssigningAuthority() {
+    }
+
+    public AssigningAuthority(String assigningAuthority) {
+        this.assigningAuthority = assigningAuthority;
     }
 
     public AssigningAuthority(String assigningAuthority, String assigningAuthorityId) {
         this.assigningAuthority = assigningAuthority;
         this.assigningAuthorityId = assigningAuthorityId;
+    }
+
+    public AssigningAuthority(String assigningAuthority, String assigningAuthorityId, String assigningAuthorityIdType) {
+        this.assigningAuthority = assigningAuthority;
+        this.assigningAuthorityId = assigningAuthorityId;
+        this.assigningAuthorityIdType = assigningAuthorityIdType;
     }
 
     public String getAssigningAuthority() {
@@ -34,33 +45,50 @@ public class AssigningAuthority {
         this.assigningAuthorityId = assigningAuthorityId;
     }
 
+    public String getAssigningAuthorityIdType() {
+        return assigningAuthorityIdType;
+    }
+
+    public void setAssigningAuthorityIdType(String assigningAuthorityIdType) {
+        this.assigningAuthorityIdType = assigningAuthorityIdType;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
         AssigningAuthority authority = (AssigningAuthority) o;
-
-        if (assigningAuthority != null ? !assigningAuthority.equals(authority.assigningAuthority) : authority.assigningAuthority != null)
-            return false;
-        if (assigningAuthorityId != null ? !assigningAuthorityId.equals(authority.assigningAuthorityId) : authority.assigningAuthorityId != null)
-            return false;
-
-        return true;
+        return toHL7().equals(authority.toHL7());
     }
 
     @Override
     public int hashCode() {
         int result = assigningAuthority != null ? assigningAuthority.hashCode() : 0;
         result = 31 * result + (assigningAuthorityId != null ? assigningAuthorityId.hashCode() : 0);
+        result = 31 * result + (assigningAuthorityIdType != null ? assigningAuthorityIdType.hashCode() : 0);
         return result;
+    }
+
+    public String toHL7() {
+        String res = "";
+        if (assigningAuthority!=null && !assigningAuthority.trim().isEmpty()) {
+            res += assigningAuthority;
+        }
+        if (assigningAuthorityId!=null && !assigningAuthorityId.trim().isEmpty()) {
+            res += "&" + assigningAuthorityId;
+        }
+        if (assigningAuthorityIdType!=null && !assigningAuthorityIdType.trim().isEmpty()) {
+            if (assigningAuthorityId==null || assigningAuthorityId.trim().isEmpty()) {
+                res += "&";
+            }
+            res += "&" + assigningAuthorityIdType;
+        }
+        return res;
     }
 
     @Override
     public String toString() {
-        if (assigningAuthority!=null && !assigningAuthority.isEmpty()) {
-            return assigningAuthority + " (" + assigningAuthorityId + ")";
-        }
-        return assigningAuthorityId;
+        return toHL7();
     }
 }

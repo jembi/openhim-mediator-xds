@@ -8,7 +8,7 @@
     <rim:AdhocQuery id="urn:uuid:14d4debf-8f97-4251-9a74-a90016b0af0d">
       <rim:Slot name="$XDSDocumentEntryPatientId">
         <rim:ValueList>
-          <rim:Value>'ECID1^^^ECID&amp;ECID&amp;ISO'</rim:Value>
+          <rim:Value>'ECID1^^^ECID&amp;ECID&amp;ECID'</rim:Value>
         </rim:ValueList>
       </rim:Slot>
       <rim:Slot name="$XDSDocumentEntryStatus">

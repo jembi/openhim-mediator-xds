@@ -111,7 +111,7 @@ public class RegistryActorTest {
     public void testValidRegistryStoredQuery() throws Exception {
         new JavaTestKit(system) {{
             //mock pix resolver
-            Identifier ecid = new Identifier("ECID1", new AssigningAuthority("ECID", "ECID"));
+            Identifier ecid = new Identifier("ECID1", new AssigningAuthority("ECID", "ECID", "ECID"));
             ActorRef resolvePIDDummy = system.actorOf(
                     Props.create(DummyResolveIdentifierActor.class, ResolvePatientIdentifier.class, ResolvePatientIdentifierResponse.class, ecid)
             );

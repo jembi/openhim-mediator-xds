@@ -121,7 +121,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
     }
 
     private void setupResolvePatientIDMock(List<DummyResolveIdentifierActor.ExpectedRequest> expectedRequestList) {
-        Identifier ecid = new Identifier("ECID1", new AssigningAuthority("ECID", "ECID"));
+        Identifier ecid = new Identifier("ECID1", new AssigningAuthority("ECID", "ECID", "ECID"));
         if (expectedRequestList!=null) {
             resolvePIDDummy = system.actorOf(Props.create(DummyResolveIdentifierActor.class, ResolvePatientIdentifier.class, ResolvePatientIdentifierResponse.class, ecid, expectedRequestList));
         } else {
@@ -134,7 +134,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
     }
 
     private void setupResolveHCWIDMock(List<DummyResolveIdentifierActor.ExpectedRequest> expectedRequestList) {
-        Identifier epid = new Identifier("EPID1", new AssigningAuthority("EPID", "EPID"));
+        Identifier epid = new Identifier("EPID1", new AssigningAuthority("EPID", "EPID", "EPID"));
         if (expectedRequestList!=null) {
             resolveHWIDDummy = system.actorOf(Props.create(DummyResolveIdentifierActor.class, ResolveHealthcareWorkerIdentifier.class, ResolveHealthcareWorkerIdentifierResponse.class, epid, expectedRequestList));
         } else {
@@ -147,7 +147,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
     }
 
     private void setupResolveFacilityIDMock(List<DummyResolveIdentifierActor.ExpectedRequest> expectedRequestList) {
-        Identifier elid = new Identifier("ELID1", new AssigningAuthority("ELID", "ELID"));
+        Identifier elid = new Identifier("ELID1", new AssigningAuthority("ELID", "ELID", "ELID"));
         if (expectedRequestList!=null) {
             resolveFIDDummy = system.actorOf(Props.create(DummyResolveIdentifierActor.class, ResolveFacilityIdentifier.class, ResolveFacilityIdentifierResponse.class, elid, expectedRequestList));
         } else {
@@ -188,8 +188,8 @@ public class ProvideAndRegisterOrchestrationActorTest {
     @Test
     public void shouldSendResolvePatientIDRequests() throws Exception {
         final List<DummyResolveIdentifierActor.ExpectedRequest> expectedPatientIds = new ArrayList<>();
-        expectedPatientIds.add(new DummyResolveIdentifierActor.ExpectedRequest(new Identifier("1111111111", new AssigningAuthority("", "1.2.3"))));
-        expectedPatientIds.add(new DummyResolveIdentifierActor.ExpectedRequest(new Identifier("76cc765a442f410", new AssigningAuthority("", "1.3.6.1.4.1.21367.2005.3.7"))));
+        expectedPatientIds.add(new DummyResolveIdentifierActor.ExpectedRequest(new Identifier("1111111111", new AssigningAuthority("", "1.2.3", "ISO"))));
+        expectedPatientIds.add(new DummyResolveIdentifierActor.ExpectedRequest(new Identifier("76cc765a442f410", new AssigningAuthority("", "1.3.6.1.4.1.21367.2005.3.7", "ISO"))));
 
         setupResolvePatientIDMock(expectedPatientIds);
         setupResolveHCWIDMock();
@@ -254,7 +254,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
 
             RegistryPackageType regPac = InfosetUtil.getRegistryPackage(pnr.getSubmitObjectsRequest(), XDSConstants.UUID_XDSSubmissionSet);
             String submissionPatCX = InfosetUtil.getExternalIdentifierValue(XDSConstants.UUID_XDSSubmissionSet_patientId, regPac);
-            assertEquals("ECID1^^^ECID&ECID&ISO", submissionPatCX);
+            assertEquals("ECID1^^^ECID&ECID&ECID", submissionPatCX);
         }};
     }
 
@@ -273,7 +273,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
 
             ExtrinsicObjectType eo = InfosetUtil.getExtrinsicObjects(pnr.getSubmitObjectsRequest()).get(0);
             String documentPatCX = InfosetUtil.getExternalIdentifierValue(XDSConstants.UUID_XDSDocumentEntry_patientId, eo);
-            assertEquals("ECID1^^^ECID&ECID&ISO", documentPatCX);
+            assertEquals("ECID1^^^ECID&ECID&ECID", documentPatCX);
         }};
     }
 
@@ -333,8 +333,8 @@ public class ProvideAndRegisterOrchestrationActorTest {
         config.getProperties().setProperty("pnr.providers.enrich", "false");
 
         final List<DummyResolveIdentifierActor.ExpectedRequest> expectedHealthcareWorkerIds = new ArrayList<>();
-        expectedHealthcareWorkerIds.add(new DummyResolveIdentifierActor.ExpectedRequest(new Identifier("pro111", new AssigningAuthority("", "1.2.3"))));
-        expectedHealthcareWorkerIds.add(new DummyResolveIdentifierActor.ExpectedRequest(new Identifier("pro112", new AssigningAuthority("", "1.2.3"))));
+        expectedHealthcareWorkerIds.add(new DummyResolveIdentifierActor.ExpectedRequest(new Identifier("pro111", new AssigningAuthority("", "1.2.3", "ISO"))));
+        expectedHealthcareWorkerIds.add(new DummyResolveIdentifierActor.ExpectedRequest(new Identifier("pro112", new AssigningAuthority("", "1.2.3", "ISO"))));
 
         setupResolvePatientIDMock();
         setupResolveHCWIDMock(expectedHealthcareWorkerIds);
@@ -359,8 +359,8 @@ public class ProvideAndRegisterOrchestrationActorTest {
         config.getProperties().setProperty("pnr.facilities.enrich", "false");
 
         final List<DummyResolveIdentifierActor.ExpectedRequest> expectedFacilityIds = new ArrayList<>();
-        expectedFacilityIds.add(new DummyResolveIdentifierActor.ExpectedRequest(new Identifier("45", new AssigningAuthority("", "1.2.3.4.5.6.7.8.9.1789"))));
-        expectedFacilityIds.add(new DummyResolveIdentifierActor.ExpectedRequest(new Identifier("53", new AssigningAuthority("", "1.2.3.4.5.6.7.8.9.1789"))));
+        expectedFacilityIds.add(new DummyResolveIdentifierActor.ExpectedRequest(new Identifier("45", new AssigningAuthority("", "1.2.3.4.5.6.7.8.9.1789", "ISO"))));
+        expectedFacilityIds.add(new DummyResolveIdentifierActor.ExpectedRequest(new Identifier("53", new AssigningAuthority("", "1.2.3.4.5.6.7.8.9.1789", "ISO"))));
 
         setupResolvePatientIDMock();
         setupResolveHCWIDMock();
@@ -380,7 +380,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
     @Test
     public void shouldNotSendDuplicateResolvePatientIDRequests() throws Exception {
         final List<DummyResolveIdentifierActor.ExpectedRequest> expectedPatientIds = new ArrayList<>();
-        expectedPatientIds.add(new DummyResolveIdentifierActor.ExpectedRequest(new Identifier("1111111111", new AssigningAuthority("", "1.2.3"))));
+        expectedPatientIds.add(new DummyResolveIdentifierActor.ExpectedRequest(new Identifier("1111111111", new AssigningAuthority("", "1.2.3", "ISO"))));
 
         setupResolvePatientIDMock(expectedPatientIds);
         setupResolveHCWIDMock();
@@ -413,8 +413,8 @@ public class ProvideAndRegisterOrchestrationActorTest {
         setupResolveFacilityIDMock();
 
         List<Identifier> expectedPatientIds = new ArrayList<>();
-        expectedPatientIds.add(new Identifier("76cc765a442f410", new AssigningAuthority("", "1.3.6.1.4.1.21367.2005.3.7")));
-        expectedPatientIds.add(new Identifier("1111111111", new AssigningAuthority("", "1.2.3")));
+        expectedPatientIds.add(new Identifier("76cc765a442f410", new AssigningAuthority("", "1.3.6.1.4.1.21367.2005.3.7", "ISO")));
+        expectedPatientIds.add(new Identifier("1111111111", new AssigningAuthority("", "1.2.3", "ISO")));
         RegisterNewPatient registerNewPatient = new RegisterNewPatient(
                 null, null, expectedPatientIds, null, null, null, null, null, null
         );
@@ -443,8 +443,8 @@ public class ProvideAndRegisterOrchestrationActorTest {
         setupResolveFacilityIDMock();
 
         List<Identifier> expectedPatientIds = new ArrayList<>();
-        expectedPatientIds.add(new Identifier("76cc765a442f410", new AssigningAuthority("", "1.3.6.1.4.1.21367.2005.3.7")));
-        expectedPatientIds.add(new Identifier("1111111111", new AssigningAuthority("", "1.2.3")));
+        expectedPatientIds.add(new Identifier("76cc765a442f410", new AssigningAuthority("", "1.3.6.1.4.1.21367.2005.3.7", "ISO")));
+        expectedPatientIds.add(new Identifier("1111111111", new AssigningAuthority("", "1.2.3", "ISO")));
         RegisterNewPatient registerNewPatient = new RegisterNewPatient(
                 null, null, expectedPatientIds, "Jane", "Doe", "F", "19860101", "tel:+27832222222", "eng"
         );

@@ -50,7 +50,7 @@ public class EnrichRegistryStoredQueryActorTest {
         new JavaTestKit(system) {{
             ActorRef actor = system.actorOf(Props.create(EnrichRegistryStoredQueryActor.class));
 
-            Identifier id = new Identifier("ECID1", new AssigningAuthority("ECID", "ECID"));
+            Identifier id = new Identifier("ECID1", new AssigningAuthority("ECID", "ECID", "ECID"));
             EnrichRegistryStoredQuery msg = new EnrichRegistryStoredQuery(getRef(), getRef(), testAdhocRequest, id);
             actor.tell(msg, getRef());
 

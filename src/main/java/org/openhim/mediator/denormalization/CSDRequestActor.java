@@ -95,7 +95,7 @@ public class CSDRequestActor extends UntypedActor {
         String csdTemplate = "<csd:careServicesRequest xmlns='urn:ihe:iti:csd:2013' xmlns:csd='urn:ihe:iti:csd:2013'>\n"
                 + "	<function urn='urn:ihe:iti:csd:2014:stored-function:provider-search'>\n"
                 + "		<requestParams>\n"
-                + "			<otherID code='" + msg.getIdentifier() + "' assigningAuthorityName='" + msg.getIdentifier().getAssigningAuthority().getAssigningAuthorityId() + "'/>\n"
+                + "			<otherID code='" + msg.getIdentifier().getIdentifier() + "' assigningAuthorityName='" + msg.getIdentifier().getAssigningAuthority().getAssigningAuthorityId() + "'/>\n"
                 + "		</requestParams>\n"
                 + "	</function>\n"
                 + "</csd:careServicesRequest>";
@@ -107,7 +107,7 @@ public class CSDRequestActor extends UntypedActor {
         String csdTemplate = "<csd:careServicesRequest xmlns='urn:ihe:iti:csd:2013' xmlns:csd='urn:ihe:iti:csd:2013'>\n"
                 + "	<function urn='urn:ihe:iti:csd:2014:stored-function:facility-search'>\n"
                 + "		<requestParams>\n"
-                + "			<otherID code='" + msg.getIdentifier() + "' assigningAuthorityName='" + msg.getIdentifier().getAssigningAuthority().getAssigningAuthorityId() + "'/>\n"
+                + "			<otherID code='" + msg.getIdentifier().getIdentifier() + "' assigningAuthorityName='" + msg.getIdentifier().getAssigningAuthority().getAssigningAuthorityId() + "'/>\n"
                 + "		</requestParams>\n"
                 + "	</function>\n"
                 + "</csd:careServicesRequest>";

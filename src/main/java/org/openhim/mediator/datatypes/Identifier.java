@@ -101,17 +101,17 @@ public class Identifier {
     }
 
     public String toXCN() {
-        String authId = assigningAuthority!=null && assigningAuthority.getAssigningAuthorityId()!=null ?
-                assigningAuthority.getAssigningAuthorityId() :
-                "";
-        return identifier + "^^^^^^^^&" + authId + "&ISO";
+        if (assigningAuthority==null) {
+            return identifier;
+        }
+        return identifier + "^^^^^^^^" + assigningAuthority.toHL7();
     }
 
     public String toXON(String organisationName) {
-        String authId = assigningAuthority!=null && assigningAuthority.getAssigningAuthorityId()!=null ?
-                assigningAuthority.getAssigningAuthorityId() :
-                "";
-        return organisationName + "^^^^^&" + authId + "&ISO" + "^^^^" + identifier;
+        if (assigningAuthority==null) {
+            return organisationName + "^^^^^^^^^" + identifier;
+        }
+        return organisationName + "^^^^^" + assigningAuthority.toHL7() + "^^^^" + identifier;
     }
 
     @Override

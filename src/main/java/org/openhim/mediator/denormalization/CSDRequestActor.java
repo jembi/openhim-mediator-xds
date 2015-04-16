@@ -128,13 +128,13 @@ public class CSDRequestActor extends UntypedActor {
     protected static Identifier buildIdentifier(String resolvedId) throws ValidationException {
         if (resolvedId.startsWith("urn:uuid:")) {
             resolvedId = resolvedId.replace("urn:uuid:", "");
-            return new Identifier(resolvedId, new AssigningAuthority("", UUID_OID_AUTHORITY));
+            return new Identifier(resolvedId, new AssigningAuthority("", UUID_OID_AUTHORITY, "ISO"));
         } else if (resolvedId.startsWith("urn:oid:")) {
             try {
                 resolvedId = resolvedId.replace("urn:oid:", "");
                 String id = resolvedId.substring(resolvedId.lastIndexOf('.') + 1);
                 String authId = resolvedId.substring(0, resolvedId.lastIndexOf('.'));
-                return new Identifier(id, new AssigningAuthority("", authId));
+                return new Identifier(id, new AssigningAuthority("", authId, "ISO"));
             } catch (StringIndexOutOfBoundsException ex) {
                 throw new ValidationException("Received identifier could not be parsed as an OID");
             }

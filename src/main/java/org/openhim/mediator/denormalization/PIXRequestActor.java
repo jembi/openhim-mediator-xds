@@ -115,7 +115,7 @@ public class PIXRequestActor extends UntypedActor {
             t.set("PID-3(" + i + ")-1", msg.getPatientIdentifiers().get(i).getIdentifier());
             t.set("PID-3(" + i + ")-4", msg.getPatientIdentifiers().get(i).getAssigningAuthority().getAssigningAuthority());
             t.set("PID-3(" + i + ")-4-2", msg.getPatientIdentifiers().get(i).getAssigningAuthority().getAssigningAuthorityId());
-            t.set("PID-3(" + i + ")-4-3", "ISO");
+            t.set("PID-3(" + i + ")-4-3", msg.getPatientIdentifiers().get(i).getAssigningAuthority().getAssigningAuthorityIdType());
         }
         t.set("PID-5-1", msg.getFamilyName());
         t.set("PID-5-2", msg.getGivenName());
@@ -185,10 +185,23 @@ public class PIXRequestActor extends UntypedActor {
         }
 
         String id = msg.getQUERY_RESPONSE().getPID().getPatientIdentifierList(0).getCx1_IDNumber().getValue();
-        String assigningAuthority = msg.getQUERY_RESPONSE().getPID().getPatientIdentifierList(0).getAssigningAuthority().getNamespaceID().getValue();
-        String assigningAuthorityId = msg.getQUERY_RESPONSE().getPID().getPatientIdentifierList(0).getAssigningAuthority().getUniversalID().getValue();
 
-        return new Identifier(id, new AssigningAuthority(assigningAuthority, assigningAuthorityId));
+        String assigningAuthority = null;
+        if (msg.getQUERY_RESPONSE().getPID().getPatientIdentifierList(0).getAssigningAuthority().getNamespaceID()!=null) {
+            assigningAuthority = msg.getQUERY_RESPONSE().getPID().getPatientIdentifierList(0).getAssigningAuthority().getNamespaceID().getValue();
+        }
+
+        String assigningAuthorityId = null;
+        if (msg.getQUERY_RESPONSE().getPID().getPatientIdentifierList(0).getAssigningAuthority().getUniversalID()!=null) {
+            assigningAuthorityId = msg.getQUERY_RESPONSE().getPID().getPatientIdentifierList(0).getAssigningAuthority().getUniversalID().getValue();
+        }
+
+        String assigningAuthorityIdType = null;
+        if (msg.getQUERY_RESPONSE().getPID().getPatientIdentifierList(0).getAssigningAuthority().getUniversalIDType()!=null) {
+            assigningAuthorityIdType = msg.getQUERY_RESPONSE().getPID().getPatientIdentifierList(0).getAssigningAuthority().getUniversalIDType().getValue();
+        }
+
+        return new Identifier(id, new AssigningAuthority(assigningAuthority, assigningAuthorityId, assigningAuthorityIdType));
     }
 
     private void processQBP_Q21Response(MediatorSocketResponse msg, ResolvePatientIdentifier originalRequest) {

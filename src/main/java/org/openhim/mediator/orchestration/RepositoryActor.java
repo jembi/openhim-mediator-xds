@@ -66,7 +66,7 @@ public class RepositoryActor extends UntypedActor {
     private void readMessage() {
         contentType = originalRequest.getHeaders().get("Content-Type");
 
-        if (contentType!=null && contentType.contains("multipart/related")) {
+        if (contentType!=null && (contentType.contains("multipart/related") || contentType.contains("multipart/form-data"))) {
             log.info("Message is multipart. Parsing contents...");
             XDSbMimeProcessorActor.MimeMessage mimeMsg = new XDSbMimeProcessorActor.MimeMessage(originalRequest.getRequestHandler(), getSelf(), originalRequest.getBody(), contentType);
             mtomProcessor.tell(mimeMsg, getSelf());

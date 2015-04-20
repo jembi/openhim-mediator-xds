@@ -11,20 +11,49 @@ import org.openhim.mediator.exceptions.CXParseException;
 public class Identifier {
     private String identifier;
     private AssigningAuthority assigningAuthority;
+    private String typeCode;
 
     public Identifier(String identifier, AssigningAuthority assigningAuthority) {
         this.assigningAuthority = assigningAuthority;
         this.identifier = identifier;
     }
 
+    public Identifier(String identifier, AssigningAuthority assigningAuthority, String typeCode) {
+        this.assigningAuthority = assigningAuthority;
+        this.identifier = identifier;
+        this.typeCode = typeCode;
+    }
+
     public Identifier(String CX) throws CXParseException {
-        try {
-            identifier = CX.substring(0, CX.indexOf('^'));
-            String _assigningAuthority = CX.substring(CX.lastIndexOf('^') + 1, CX.indexOf('&'));
-            String _assigningAuthorityId = CX.substring(CX.indexOf('&') + 1, CX.lastIndexOf('&'));
-            assigningAuthority = new AssigningAuthority(_assigningAuthority, _assigningAuthorityId);
-        } catch (ArrayIndexOutOfBoundsException | StringIndexOutOfBoundsException ex) {
-            throw new CXParseException("Failed to parse CX string: " + CX, ex);
+        if (CX.trim().isEmpty()) {
+            throw new CXParseException("Empty CX string");
+        }
+
+        String[] tokens = CX.split("\\^");
+
+        if (tokens.length>0 && !tokens[0].isEmpty()) {
+            identifier = tokens[0];
+        }
+
+        if (tokens.length>3 && !tokens[3].isEmpty()) {
+            String[] authTokens = tokens[3].split("&");
+            AssigningAuthority auth = new AssigningAuthority();
+
+            if (authTokens.length>0 && !authTokens[0].isEmpty()) {
+                auth.setAssigningAuthority(authTokens[0]);
+            }
+            if (authTokens.length>1 && !authTokens[1].isEmpty()) {
+                auth.setAssigningAuthorityId(authTokens[1]);
+            }
+            if (authTokens.length>2 && !authTokens[2].isEmpty()) {
+                auth.setAssigningAuthorityIdType(authTokens[2]);
+            }
+
+            assigningAuthority = auth;
+        }
+
+        if (tokens.length>4 && !tokens[4].isEmpty()) {
+            typeCode = tokens[4];
         }
     }
 
@@ -44,31 +73,45 @@ public class Identifier {
         this.identifier = identifier;
     }
 
+    public String getTypeCode() {
+        return typeCode;
+    }
+
+    public void setTypeCode(String typeCode) {
+        this.typeCode = typeCode;
+    }
+
     public String toString() {
         return toCX();
     }
 
     public String toCX() {
+        String res = identifier;
         if (assigningAuthority!=null) {
-            String auth = assigningAuthority.getAssigningAuthority()!=null ? assigningAuthority.getAssigningAuthority() : "";
-            String authId = assigningAuthority.getAssigningAuthorityId()!=null ? assigningAuthority.getAssigningAuthorityId() : "";
-            return String.format("%s^^^%s&%s&ISO", identifier, auth, authId);
+            res += "^^^" + assigningAuthority.toHL7();
         }
-        return identifier + "^^^&&ISO";
+        if (typeCode!=null && !typeCode.trim().isEmpty()) {
+            if (assigningAuthority==null) {
+                res += "^^^^" + typeCode;
+            } else {
+                res += "^" + typeCode;
+            }
+        }
+        return res;
     }
 
     public String toXCN() {
-        String authId = assigningAuthority!=null && assigningAuthority.getAssigningAuthorityId()!=null ?
-                assigningAuthority.getAssigningAuthorityId() :
-                "";
-        return identifier + "^^^^^^^^&" + authId + "&ISO";
+        if (assigningAuthority==null) {
+            return identifier;
+        }
+        return identifier + "^^^^^^^^" + assigningAuthority.toHL7();
     }
 
     public String toXON(String organisationName) {
-        String authId = assigningAuthority!=null && assigningAuthority.getAssigningAuthorityId()!=null ?
-                assigningAuthority.getAssigningAuthorityId() :
-                "";
-        return organisationName + "^^^^^&" + authId + "&ISO" + "^^^^" + identifier;
+        if (assigningAuthority==null) {
+            return organisationName + "^^^^^^^^^" + identifier;
+        }
+        return organisationName + "^^^^^" + assigningAuthority.toHL7() + "^^^^" + identifier;
     }
 
     @Override
@@ -77,18 +120,14 @@ public class Identifier {
         if (o == null || getClass() != o.getClass()) return false;
 
         Identifier that = (Identifier) o;
-
-        if (assigningAuthority != null ? !assigningAuthority.equals(that.assigningAuthority) : that.assigningAuthority != null)
-            return false;
-        if (identifier != null ? !identifier.equals(that.identifier) : that.identifier != null) return false;
-
-        return true;
+        return toCX().equals(that.toCX());
     }
 
     @Override
     public int hashCode() {
         int result = identifier != null ? identifier.hashCode() : 0;
         result = 31 * result + (assigningAuthority != null ? assigningAuthority.hashCode() : 0);
+        result = 31 * result + (typeCode != null ? typeCode.hashCode() : 0);
         return result;
     }
 }

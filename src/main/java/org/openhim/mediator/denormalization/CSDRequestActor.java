@@ -92,25 +92,25 @@ public class CSDRequestActor extends UntypedActor {
     }
 
     private void sendResolveHealthcareWorkerIdentifierRequest(ResolveHealthcareWorkerIdentifier msg) {
-        String csdTemplate = "<csd:careServicesRequest xmlns='urn:ihe:iti:csd:2013' xmlns:csd='urn:ihe:iti:csd:2013'>\n"
+        String csdTemplate = "<careServicesRequest xmlns='urn:ihe:iti:csd:2013'>\n"
                 + "	<function urn='urn:ihe:iti:csd:2014:stored-function:provider-search'>\n"
                 + "		<requestParams>\n"
                 + "			<otherID code='" + msg.getIdentifier().getIdentifier() + "' assigningAuthorityName='" + msg.getIdentifier().getAssigningAuthority().getAssigningAuthorityId() + "'/>\n"
                 + "		</requestParams>\n"
                 + "	</function>\n"
-                + "</csd:careServicesRequest>";
+                + "</careServicesRequest>";
 
         sendCSDRequest(csdTemplate, msg);
     }
 
     private void sendResolveFacilityIdentifierRequest(ResolveFacilityIdentifier msg) {
-        String csdTemplate = "<csd:careServicesRequest xmlns='urn:ihe:iti:csd:2013' xmlns:csd='urn:ihe:iti:csd:2013'>\n"
+        String csdTemplate = "<careServicesRequest xmlns='urn:ihe:iti:csd:2013'>\n"
                 + "	<function urn='urn:ihe:iti:csd:2014:stored-function:facility-search'>\n"
                 + "		<requestParams>\n"
                 + "			<otherID code='" + msg.getIdentifier().getIdentifier() + "' assigningAuthorityName='" + msg.getIdentifier().getAssigningAuthority().getAssigningAuthorityId() + "'/>\n"
                 + "		</requestParams>\n"
                 + "	</function>\n"
-                + "</csd:careServicesRequest>";
+                + "</careServicesRequest>";
 
         sendCSDRequest(csdTemplate, msg);
     }

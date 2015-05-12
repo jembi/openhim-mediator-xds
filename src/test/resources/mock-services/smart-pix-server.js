@@ -37,15 +37,15 @@ net.createServer(function(c) {
     data += chunk;
 
     if (chunk.toString().indexOf(footer) != -1) {
-      console.log('Recieved message:\n' + data.replace('\r', '\n') + '\n\n');
+      console.log('Recieved message:\n' + data.replace(/\r/g, '\n') + '\n\n');
 
       var regex = /(PID|QPD)\|[\w\s]*\|[\w\s\-\.]*\|([\w\.\^\&\~]+)/g;
 
       var pids = regex.exec(data)[2].split('~');
       var _i, _len;
       for (_i = 0, _len = pids.length; _i < _len; _i++) {
-        if (pids[_i].indexOf('ISO') > -1) {
-          pids[_i] = pids[_i].substr(0, pids[_i].indexOf('ISO'));
+        if (pids[_i].indexOf('&') > -1) {
+          pids[_i] = pids[_i].substr(0, pids[_i].indexOf('&'));
         }
       }
       console.log("PID: " + pids);

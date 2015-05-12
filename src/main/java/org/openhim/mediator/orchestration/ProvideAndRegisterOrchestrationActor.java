@@ -31,6 +31,7 @@ import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
+import javax.xml.bind.DatatypeConverter;
 import javax.xml.bind.JAXBException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -461,7 +462,8 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         String document = originalRequest.getDocument(); //is mime?
         if (document == null) { //else get from parsed message
             if (parsedRequest.getDocument()!=null && parsedRequest.getDocument().size()>=1) {
-                document = new String(parsedRequest.getDocument().get(0).getValue());
+                document = parsedRequest.getDocument().get(0).getContent().get(0).toString();
+                document = new String(DatatypeConverter.parseBase64Binary(document));
             }
         }
 

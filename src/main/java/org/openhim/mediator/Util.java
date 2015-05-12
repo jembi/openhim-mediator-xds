@@ -53,9 +53,7 @@ public class Util {
 	public static String marshallJAXBObject(String namespace, Object o, boolean addXMLDeclaration) throws JAXBException {
 		JAXBContext jc = getJAXBContext(namespace);
 		Marshaller marshaller = jc.createMarshaller();
-		if (addXMLDeclaration) {
-			marshaller.setProperty("com.sun.xml.bind.xmlDeclaration", addXMLDeclaration);
-		}
+		marshaller.setProperty(Marshaller.JAXB_FRAGMENT, !addXMLDeclaration);
 		StringWriter sw = new StringWriter();
 		marshaller.marshal(o, sw);
 		return sw.toString();

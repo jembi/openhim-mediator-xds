@@ -75,17 +75,16 @@
 		<xs:sequence>
 			<xs:element ref="lcm:SubmitObjectsRequest"/>
 			<xs:sequence minOccurs="0">
-				<xs:element name="Document" maxOccurs="unbounded" xmime:expectedContentTypes="application/octet-stream">
-					<xs:complexType>
-						<xs:simpleContent>
-							<xs:extension base="xs:base64Binary">
-								<xs:attribute name="id" type="xs:anyURI" use="required">
-									<xs:annotation>
-										<xs:documentation>This corresponds to the ExtrinsicObject id in the eb RIM metadata a provides a linkage between the actual document data and its metadata</xs:documentation>
-									</xs:annotation>
-								</xs:attribute>
-							</xs:extension>
-						</xs:simpleContent>
+				<xs:element name="Document" maxOccurs="unbounded" type="xs:string">
+					<xs:complexType mixed="true">
+						<xs:sequence>
+							<xs:any/>
+						</xs:sequence>
+						<xs:attribute name="id" type="xs:anyURI" use="required">
+							<xs:annotation>
+								<xs:documentation>This corresponds to the ExtrinsicObject id in the eb RIM metadata a provides a linkage between the actual document data and its metadata</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
 					</xs:complexType>
 				</xs:element>
 			</xs:sequence>

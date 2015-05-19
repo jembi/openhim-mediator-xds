@@ -15,12 +15,14 @@ import ihe.iti.xds_b._2007.ProvideAndRegisterDocumentSetRequestType;
 import ihe.iti.xds_b._2007.ObjectFactory;
 import oasis.names.tc.ebxml_regrep.xsd.rim._3.*;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.http.HttpStatus;
 import org.dcm4chee.xds2.common.XDSConstants;
 import org.dcm4chee.xds2.infoset.util.InfosetUtil;
 import org.openhim.mediator.Util;
 import org.openhim.mediator.datatypes.AssigningAuthority;
 import org.openhim.mediator.datatypes.Identifier;
+import org.openhim.mediator.denormalization.RegistryResponseError;
 import org.openhim.mediator.engine.MediatorConfig;
 import org.openhim.mediator.engine.messages.*;
 import org.openhim.mediator.exceptions.CXParseException;
@@ -198,7 +200,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
                 resolveEnterpriseIdentifiers();
             }
         } catch (ValidationException ex) {
-            respondBadRequest(ex.getMessage());
+            respondBadRequest(ex);
             outcome = false;
         } finally {
             sendAuditMessage(ATNAAudit.TYPE.PROVIDE_AND_REGISTER_RECEIVED, outcome);
@@ -497,7 +499,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         if (areAllIdentifiersResolved()) {
             boolean outcome = false;
             try {
-                String errors = getResolveIdentifierErrors();
+                List<RegistryResponseError.RegistryError> errors = getResolveIdentifierErrors();
 
                 if (errors==null) {
                     respondSuccess();
@@ -507,7 +509,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
                     outcome = false;
                 }
             } catch (JAXBException ex) {
-                originalRequest.getRequestHandler().tell(new ExceptError(ex), getSelf());
+                respondBadRequest(ex);
             } finally {
                 sendAuditMessage(ATNAAudit.TYPE.PROVIDE_AND_REGISTER_ENRICHED, outcome);
                 return true;
@@ -524,8 +526,31 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
     }
 
     private void respondBadRequest(String error) {
-        FinishRequest fr = new FinishRequest(error, "text/plain", HttpStatus.SC_BAD_REQUEST);
-        originalRequest.getRequestHandler().tell(fr, getSelf());
+        log.error("An error occurred while orchestrating the message: " + error);
+
+        RegistryResponseError registryResponseError = new RegistryResponseError(RegistryResponseError.PNR_RESPONSE_ACTION, originalRequest.getMessageID());
+        registryResponseError.addRegistryError(new RegistryResponseError.RegistryError(RegistryResponseError.XDSREPOSITORY_ERROR, error));
+        originalRequest.getRequestHandler().tell(registryResponseError.toFinishRequest(), getSelf());
+    }
+
+    private void respondBadRequest(Throwable error) {
+        log.error("An error occurred while orchestrating the message: " + ExceptionUtils.getStackTrace(error));
+
+        RegistryResponseError registryResponseError = new RegistryResponseError(RegistryResponseError.PNR_RESPONSE_ACTION, originalRequest.getMessageID());
+        registryResponseError.addRegistryError(new RegistryResponseError.RegistryError(RegistryResponseError.XDSREPOSITORY_ERROR, error.getMessage()));
+        originalRequest.getRequestHandler().tell(registryResponseError.toFinishRequest(), getSelf());
+    }
+
+    private void respondBadRequest(List<RegistryResponseError.RegistryError> errors) {
+        StringBuilder err = new StringBuilder();
+        for (RegistryResponseError.RegistryError e : errors) {
+            err.append(e.getCodeContext() + "\n");
+        }
+        log.error("An error occurred while orchestrating the message:\n" + err.toString());
+
+        RegistryResponseError registryResponseError = new RegistryResponseError(RegistryResponseError.PNR_RESPONSE_ACTION, originalRequest.getMessageID());
+        registryResponseError.addRegistryErrors(errors);
+        originalRequest.getRequestHandler().tell(registryResponseError.toFinishRequest(), getSelf());
     }
 
     private boolean areAllIdentifiersResolved() {
@@ -544,9 +569,9 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
     }
 
     /**
-     * @return null if all identifiers were resolved successfully, else an error message listing all failed identifiers
+     * @return a list of errors for all failed identifiers; list will be empty if all identifiers were resolved successfully
      */
-    private String getResolveIdentifierErrors() {
+    private List<RegistryResponseError.RegistryError> getResolveIdentifierErrors() {
         List<IdentifierMapping> unsuccessfulPatientIDs = getAllUnsuccessfulIdentifiers(enterprisePatientIds);
         List<IdentifierMapping> unsuccessfulHealthcareWorkerIDs = getAllUnsuccessfulIdentifiers(enterpriseHealthcareWorkerIds);
         List<IdentifierMapping> unsuccessfulFacilityIDs = getAllUnsuccessfulIdentifiers(enterpriseFacilityIds);
@@ -556,34 +581,31 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
             return null;
         }
 
-        StringBuilder errors = new StringBuilder();
+        List<RegistryResponseError.RegistryError> errors = new LinkedList<>();
 
         if (!unsuccessfulPatientIDs.isEmpty()) {
-            errors.append("Failed to resolve patient identifiers for:\n");
             for (IdentifierMapping id : unsuccessfulPatientIDs) {
-                errors.append(id.fromId.toCX() + "\n");
+                String msg = "Failed to resolve patient identifier: " + id.fromId.toCX();
+                errors.add(new RegistryResponseError.RegistryError(RegistryResponseError.XDSUNKNOWNPATIENTID, msg));
             }
-            errors.append("\n");
         }
 
         if (!unsuccessfulHealthcareWorkerIDs.isEmpty()) {
-            errors.append("Failed to resolve healthcare worker identifiers for:\n");
             for (IdentifierMapping id : unsuccessfulHealthcareWorkerIDs) {
-                errors.append(id.fromId.toXCN() + "\n");
+                String msg = "Failed to resolve healthcare worker identifier: " + id.fromId.toXCN();
+                errors.add(new RegistryResponseError.RegistryError(RegistryResponseError.XDSREPOSITORY_ERROR, msg));
             }
-            errors.append("\n");
         }
 
         if (!unsuccessfulFacilityIDs.isEmpty()) {
-            errors.append("Failed to resolve facility identifiers for:\n");
             for (IdentifierMapping id : unsuccessfulFacilityIDs) {
                 FacilityIdentifierMapping fim = ((FacilityIdentifierMapping) id);
-                errors.append(fim.fromId.toXON(fim.localLocationName) + "\n");
+                String msg = "Failed to resolve facility identifier: " + fim.fromId.toXON(fim.localLocationName);
+                errors.add(new RegistryResponseError.RegistryError(RegistryResponseError.XDSREPOSITORY_ERROR, msg));
             }
-            errors.append("\n");
         }
 
-        return errors.toString();
+        return errors;
     }
 
     private List<IdentifierMapping> getAllUnsuccessfulIdentifiers(List<IdentifierMapping> lst) {

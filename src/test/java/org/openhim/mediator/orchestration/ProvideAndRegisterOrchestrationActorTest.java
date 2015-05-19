@@ -180,7 +180,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
         final String testPnR = IOUtils.toString(testPnRIn);
 
         ActorRef actor = system.actorOf(Props.create(ProvideAndRegisterOrchestrationActor.class, config, resolvePIDDummy, resolveHWIDDummy, resolveFIDDummy, identityFeedDummy));
-        OrchestrateProvideAndRegisterRequest testMsg = new OrchestrateProvideAndRegisterRequest(ref, ref, testPnR, null, null);
+        OrchestrateProvideAndRegisterRequest testMsg = new OrchestrateProvideAndRegisterRequest(ref, ref, testPnR, null, null, null);
 
         actor.tell(testMsg, ref);
     }
@@ -278,7 +278,7 @@ public class ProvideAndRegisterOrchestrationActorTest {
     }
 
     @Test
-    public void validateAndEnrichPatient_shouldRespondWithBadRequestIfPatientNotResolved() throws Exception {
+    public void validateAndEnrichPatient_shouldRespondWithXDSRegistryResponseIfPatientNotResolved() throws Exception {
         Identifier responseId = null;
         resolvePIDDummy = system.actorOf(Props.create(DummyResolveIdentifierActor.class, ResolvePatientIdentifier.class, ResolvePatientIdentifierResponse.class, responseId));
         setupResolveHCWIDMock();
@@ -289,7 +289,10 @@ public class ProvideAndRegisterOrchestrationActorTest {
             sendPnRMessage(system, getRef(), "pnr1.xml");
             FinishRequest response = expectMsgClass(waitTime, FinishRequest.class);
 
-            assertEquals(new Integer(400), response.getResponseStatus());
+            assertEquals(new Integer(200), response.getResponseStatus());
+            assertNotNull(response.getResponse());
+            assertTrue(response.getResponse().contains("<ns3:RegistryError errorCode=\"XDSUnknownPatientId\" codeContext=\"Failed to resolve patient identifier: 76cc765a442f410^^^&amp;1.3.6.1.4.1.21367.2005.3.7&amp;ISO\" severity=\"urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:Error\"/>"));
+            assertTrue(response.getResponse().contains("<ns3:RegistryError errorCode=\"XDSUnknownPatientId\" codeContext=\"Failed to resolve patient identifier: 1111111111^^^&amp;1.2.3&amp;ISO\" severity=\"urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:Error\"/>"));
         }};
     }
 
@@ -305,7 +308,10 @@ public class ProvideAndRegisterOrchestrationActorTest {
             sendPnRMessage(system, getRef(), "pnr1.xml");
             FinishRequest response = expectMsgClass(waitTime, FinishRequest.class);
 
-            assertEquals(new Integer(400), response.getResponseStatus());
+            assertEquals(new Integer(200), response.getResponseStatus());
+            assertNotNull(response.getResponse());
+            assertTrue(response.getResponse().contains("<ns3:RegistryError errorCode=\"XDSRepositoryError\" codeContext=\"Failed to resolve healthcare worker identifier: pro111^^^^^^^^&amp;1.2.3\" severity=\"urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:Error\"/>"));
+            assertTrue(response.getResponse().contains("<ns3:RegistryError errorCode=\"XDSRepositoryError\" codeContext=\"Failed to resolve healthcare worker identifier: pro112^^^^^^^^&amp;1.2.3\" severity=\"urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:Error\"/>"));
         }};
     }
 
@@ -321,7 +327,10 @@ public class ProvideAndRegisterOrchestrationActorTest {
             sendPnRMessage(system, getRef(), "pnr1.xml");
             FinishRequest response = expectMsgClass(waitTime, FinishRequest.class);
 
-            assertEquals(new Integer(400), response.getResponseStatus());
+            assertEquals(new Integer(200), response.getResponseStatus());
+            assertNotNull(response.getResponse());
+            assertTrue(response.getResponse().contains("<ns3:RegistryError errorCode=\"XDSRepositoryError\" codeContext=\"Failed to resolve facility identifier: Some Hospital^^^^^&amp;1.2.3.4.5.6.7.8.9.1789^^^^45\" severity=\"urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:Error\"/>"));
+            assertTrue(response.getResponse().contains("<ns3:RegistryError errorCode=\"XDSRepositoryError\" codeContext=\"Failed to resolve facility identifier: Another Hospital^^^^^&amp;1.2.3.4.5.6.7.8.9.1789^^^^53\" severity=\"urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:Error\"/>"));
         }};
     }
 
@@ -477,7 +486,11 @@ public class ProvideAndRegisterOrchestrationActorTest {
             sendPnRMessage(config, system, getRef(), "pnr1.xml");
             FinishRequest fr = expectMsgClass(waitTime, FinishRequest.class);
 
-            assertEquals(new Integer(HttpStatus.SC_BAD_REQUEST), fr.getResponseStatus());
+            //should respond that identifier resolve failed since it mustn't attempt autoregistration
+            assertEquals(new Integer(200), fr.getResponseStatus());
+            assertNotNull(fr.getResponse());
+            assertTrue(fr.getResponse().contains("<ns3:RegistryError errorCode=\"XDSUnknownPatientId\" codeContext=\"Failed to resolve patient identifier: 76cc765a442f410^^^&amp;1.3.6.1.4.1.21367.2005.3.7&amp;ISO\" severity=\"urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:Error\"/>"));
+            assertTrue(fr.getResponse().contains("<ns3:RegistryError errorCode=\"XDSUnknownPatientId\" codeContext=\"Failed to resolve patient identifier: 1111111111^^^&amp;1.2.3&amp;ISO\" severity=\"urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:Error\"/>"));
         }};
     }
 }

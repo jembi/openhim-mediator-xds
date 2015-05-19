@@ -102,23 +102,23 @@ public class RegistryResponseErrorTest {
     @Test
     public void testToXML() throws Exception {
         RegistryResponseError error = new RegistryResponseError(RegistryResponseError.PNR_RESPONSE_ACTION, "urn:uuid:9876-9876-9876", "urn:uuid:1234-1234-1234");
-        error.addRegistryError(new RegistryResponseError.RegistryError(RegistryResponseError.XDSREPOSITORY_ERROR, "This is an error!"));
+        error.addRegistryError(new RegistryResponseError.RegistryError(RegistryResponseError.XDS_REPOSITORY_ERROR, "This is an error!"));
         assertEquals(EXPECTED, error.toXML());
     }
 
     @Test
     public void testToXML_shouldEscapeXMLTags() throws Exception {
         RegistryResponseError error = new RegistryResponseError(RegistryResponseError.PNR_RESPONSE_ACTION, "urn:uuid:9876-9876-9876", "urn:uuid:1234-1234-1234");
-        error.addRegistryError(new RegistryResponseError.RegistryError(RegistryResponseError.XDSREPOSITORY_ERROR, "<error>This is an error!</error>"));
+        error.addRegistryError(new RegistryResponseError.RegistryError(RegistryResponseError.XDS_REPOSITORY_ERROR, "<error>This is an error!</error>"));
         assertEquals(EXPECTED_XML_TAGS_IN_CODECONTEXT, error.toXML());
     }
 
     @Test
     public void testToXML_shouldHandleMultipleErrors() throws Exception {
         RegistryResponseError error = new RegistryResponseError(RegistryResponseError.PNR_RESPONSE_ACTION, "urn:uuid:9876-9876-9876", "urn:uuid:1234-1234-1234");
-        error.addRegistryError(new RegistryResponseError.RegistryError(RegistryResponseError.XDSREPOSITORY_ERROR, "This is an error!"));
-        error.addRegistryError(new RegistryResponseError.RegistryError(RegistryResponseError.XDSREPOSITORY_ERROR, "This is another error!"));
-        error.addRegistryError(new RegistryResponseError.RegistryError(RegistryResponseError.XDSUNKNOWNPATIENTID, "The patient is unknown!"));
+        error.addRegistryError(new RegistryResponseError.RegistryError(RegistryResponseError.XDS_REPOSITORY_ERROR, "This is an error!"));
+        error.addRegistryError(new RegistryResponseError.RegistryError(RegistryResponseError.XDS_REPOSITORY_ERROR, "This is another error!"));
+        error.addRegistryError(new RegistryResponseError.RegistryError(RegistryResponseError.XDS_UNKNOWN_PATIENTID, "The patient is unknown!"));
         assertEquals(EXPECTED_MULTIPLE_ERRORS, error.toXML());
     }
 }

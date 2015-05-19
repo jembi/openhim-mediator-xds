@@ -228,6 +228,13 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
 
     private void readPatientIdentifiers() throws CXParseException {
         RegistryPackageType regPac = InfosetUtil.getRegistryPackage(parsedRequest.getSubmitObjectsRequest(), XDSConstants.UUID_XDSSubmissionSet);
+        if (regPac==null) {
+            String msg = "Unabled to correctly parse XDS.b SubmissionSet Metadata";
+            RegistryResponseError.RegistryError err = new RegistryResponseError.RegistryError(RegistryResponseError.XDS_REPOSITORY_METADATA_ERROR, msg);
+            respondBadRequest(Collections.singletonList(err));
+            return;
+        }
+
         String CX = InfosetUtil.getExternalIdentifierValue(XDSConstants.UUID_XDSSubmissionSet_patientId, regPac);
         addPatientIdToResolve(new Identifier(CX), new DocumentNode(XDSConstants.UUID_XDSSubmissionSet_patientId, regPac));
 
@@ -529,7 +536,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         log.error("An error occurred while orchestrating the message: " + error);
 
         RegistryResponseError registryResponseError = new RegistryResponseError(RegistryResponseError.PNR_RESPONSE_ACTION, originalRequest.getMessageID());
-        registryResponseError.addRegistryError(new RegistryResponseError.RegistryError(RegistryResponseError.XDSREPOSITORY_ERROR, error));
+        registryResponseError.addRegistryError(new RegistryResponseError.RegistryError(RegistryResponseError.XDS_REPOSITORY_ERROR, error));
         originalRequest.getRequestHandler().tell(registryResponseError.toFinishRequest(), getSelf());
     }
 
@@ -537,7 +544,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         log.error("An error occurred while orchestrating the message: " + ExceptionUtils.getStackTrace(error));
 
         RegistryResponseError registryResponseError = new RegistryResponseError(RegistryResponseError.PNR_RESPONSE_ACTION, originalRequest.getMessageID());
-        registryResponseError.addRegistryError(new RegistryResponseError.RegistryError(RegistryResponseError.XDSREPOSITORY_ERROR, error.getMessage()));
+        registryResponseError.addRegistryError(new RegistryResponseError.RegistryError(RegistryResponseError.XDS_REPOSITORY_ERROR, error.getMessage()));
         originalRequest.getRequestHandler().tell(registryResponseError.toFinishRequest(), getSelf());
     }
 
@@ -586,14 +593,14 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
         if (!unsuccessfulPatientIDs.isEmpty()) {
             for (IdentifierMapping id : unsuccessfulPatientIDs) {
                 String msg = "Failed to resolve patient identifier: " + id.fromId.toCX();
-                errors.add(new RegistryResponseError.RegistryError(RegistryResponseError.XDSUNKNOWNPATIENTID, msg));
+                errors.add(new RegistryResponseError.RegistryError(RegistryResponseError.XDS_UNKNOWN_PATIENTID, msg));
             }
         }
 
         if (!unsuccessfulHealthcareWorkerIDs.isEmpty()) {
             for (IdentifierMapping id : unsuccessfulHealthcareWorkerIDs) {
                 String msg = "Failed to resolve healthcare worker identifier: " + id.fromId.toXCN();
-                errors.add(new RegistryResponseError.RegistryError(RegistryResponseError.XDSREPOSITORY_ERROR, msg));
+                errors.add(new RegistryResponseError.RegistryError(RegistryResponseError.XDS_REPOSITORY_ERROR, msg));
             }
         }
 
@@ -601,7 +608,7 @@ public class ProvideAndRegisterOrchestrationActor extends UntypedActor {
             for (IdentifierMapping id : unsuccessfulFacilityIDs) {
                 FacilityIdentifierMapping fim = ((FacilityIdentifierMapping) id);
                 String msg = "Failed to resolve facility identifier: " + fim.fromId.toXON(fim.localLocationName);
-                errors.add(new RegistryResponseError.RegistryError(RegistryResponseError.XDSREPOSITORY_ERROR, msg));
+                errors.add(new RegistryResponseError.RegistryError(RegistryResponseError.XDS_REPOSITORY_ERROR, msg));
             }
         }
 

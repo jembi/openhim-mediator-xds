@@ -43,6 +43,7 @@ public class ParseRegistryStoredQueryActor extends UntypedActor {
 
     public static final String PATIENT_ID_SLOT_TYPE = "$XDSDocumentEntryPatientId";
     private static final String BASE_XPATH_EXPRESSION = "//AdhocQueryRequest[1]/AdhocQuery/Slot[@name='%s']/ValueList[1]/Value";
+    private static final String MESSAGEID_XPATH_EXPRESSION = "Envelope/Header/MessageID";
 
 
     private String readPatientID(String msg) throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
@@ -52,6 +53,13 @@ public class ParseRegistryStoredQueryActor extends UntypedActor {
         return xpath.compile(String.format(BASE_XPATH_EXPRESSION, PATIENT_ID_SLOT_TYPE)).evaluate(doc);
     }
 
+    private String readSOAPMessageID(String msg) throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
+        DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+        Document doc = builder.parse(IOUtils.toInputStream(msg));
+        XPath xpath = XPathFactory.newInstance().newXPath();
+        return xpath.compile(MESSAGEID_XPATH_EXPRESSION).evaluate(doc);
+    }
+
 
     private void processMsg(SimpleMediatorRequest<String> msg) {
         try {
@@ -59,7 +67,9 @@ public class ParseRegistryStoredQueryActor extends UntypedActor {
             patientID_CX = patientID_CX.replace("'", "");
             Identifier patientID = new Identifier(patientID_CX);
 
-            msg.getRespondTo().tell(new ParsedRegistryStoredQuery(patientID), getSelf());
+            String messageID = readSOAPMessageID(msg.getRequestObject());
+
+            msg.getRespondTo().tell(new ParsedRegistryStoredQuery(patientID, messageID), getSelf());
         } catch (SAXException | CXParseException ex) {
             FinishRequest fr = new FinishRequest(ex.getMessage(), "text/plain", HttpStatus.SC_BAD_REQUEST);
             msg.getRequestHandler().tell(fr, getSelf());

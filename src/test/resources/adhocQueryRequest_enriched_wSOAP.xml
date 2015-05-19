@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns="urn:ihe:iti:xds-b:2007" xmlns:urn1="urn:oasis:names:tc:ebxml-regrep:xsd:lcm:3.0" xmlns:urn2="urn:oasis:names:tc:ebxml-regrep:xsd:rs:3.0" xmlns:urn3="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0" xmlns:a="http://www.w3.org/2005/08/addressing">
-<soap:Header>
+<soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
+  <wsa:MessageID>urn:uuid:44657c95-9a4a-420e-bb62-93a773e8a5f1</wsa:MessageID>
 </soap:Header>
 <soap:Body>
   <query:AdhocQueryRequest xmlns:query="urn:oasis:names:tc:ebxml-regrep:xsd:query:3.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rim="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0" xmlns:rs="urn:oasis:names:tc:ebxml-regrep:xsd:rs:3.0" xsi:schemaLocation="urn:oasis:names:tc:ebxml-regrep:xsd:query:3.0 ../../schema/ebRS/query.xsd">

@@ -16,6 +16,7 @@ import java.util.UUID;
 
 public class RegistryResponseError {
     public static final String PNR_RESPONSE_ACTION = "urn:ihe:iti:2007:ProvideAndRegisterDocumentSet-bResponse";
+    public static final String STORED_QUERY_RESPONSE_ACTION = "urn:ihe:iti:2007:RegistryStoredQueryResponse";
 
     public static final String XDS_REPOSITORY_ERROR = "XDSRepositoryError";
     public static final String XDS_UNKNOWN_PATIENTID = "XDSUnknownPatientId";

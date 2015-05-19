@@ -47,12 +47,13 @@ public class ParseRegistryStoredQueryActorTest {
         new JavaTestKit(system) {{
             ActorRef actor = system.actorOf(Props.create(ParseRegistryStoredQueryActor.class));
 
-            actor.tell(new SimpleMediatorRequest<String>(getRef(), getRef(), testAdhocRequest), getRef());
+            actor.tell(new SimpleMediatorRequest<>(getRef(), getRef(), testAdhocRequest), getRef());
 
             ParsedRegistryStoredQuery result = expectMsgClass(Duration.create(60, TimeUnit.SECONDS), ParsedRegistryStoredQuery.class);
             assertEquals("1234567890", result.getPatientId().getIdentifier());
             assertEquals("TestID", result.getPatientId().getAssigningAuthority().getAssigningAuthority());
             assertEquals("1.2.3", result.getPatientId().getAssigningAuthority().getAssigningAuthorityId());
+            assertEquals("urn:uuid:44657c95-9a4a-420e-bb62-93a773e8a5f1", result.getMessageId());
         }};
     }
 

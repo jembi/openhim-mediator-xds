@@ -146,7 +146,9 @@ public class RegistryActorTest {
 
             FinishRequest response = expectMsgClass(Duration.create(60, TimeUnit.SECONDS), FinishRequest.class);
 
-            assertEquals("Expected 404 if patient resolve failed", new Integer(404), response.getResponseStatus());
+            assertEquals(new Integer(200), response.getResponseStatus());
+            assertNotNull(response.getResponse());
+            assertTrue(response.getResponse().contains("<ns3:RegistryError errorCode=\"XDSUnknownPatientId\" codeContext=\"Could not resolve patient identifier 1234567890^^^TestID&amp;1.2.3&amp;ISO\" severity=\"urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:Error\"/>"));
         }};
     }
 

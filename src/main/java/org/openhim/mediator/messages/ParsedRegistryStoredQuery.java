@@ -10,12 +10,18 @@ import org.openhim.mediator.datatypes.Identifier;
 
 public class ParsedRegistryStoredQuery {
     private Identifier patientId;
+    private String messageId;
 
-    public ParsedRegistryStoredQuery(Identifier patientId) {
+    public ParsedRegistryStoredQuery(Identifier patientId, String messageId) {
         this.patientId = patientId;
+        this.messageId = messageId;
     }
 
     public Identifier getPatientId() {
         return patientId;
+    }
+
+    public String getMessageId() {
+        return messageId;
     }
 }

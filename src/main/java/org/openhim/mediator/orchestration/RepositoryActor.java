@@ -48,6 +48,7 @@ public class RepositoryActor extends UntypedActor {
     private MediatorHTTPRequest originalRequest;
 
     private String action;
+    private String messageID;
     private String xForwardedFor;
     private String mimeDocument;
     private String contentType;
@@ -100,7 +101,7 @@ public class RepositoryActor extends UntypedActor {
 
     private boolean determineSOAPAction() {
         try {
-            action = getSOAPActionFromHeader();
+            readSOAPHeader();
             if (action==null || action.isEmpty()) {
                 //not in soap header. maybe it's in the content-type?
                 action = getSOAPActionFromContentType();
@@ -121,11 +122,12 @@ public class RepositoryActor extends UntypedActor {
         }
     }
 
-    private String getSOAPActionFromHeader() throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
+    private void readSOAPHeader() throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
         DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
         Document doc = builder.parse(IOUtils.toInputStream(messageBuffer));
         XPath xpath = XPathFactory.newInstance().newXPath();
-        return xpath.compile("//Envelope/Header/Action").evaluate(doc);
+        action = xpath.compile("//Envelope/Header/Action").evaluate(doc);
+        messageID = xpath.compile("//Envelope/Header/MessageID").evaluate(doc);
     }
 
     private String getSOAPActionFromContentType() {
@@ -161,7 +163,7 @@ public class RepositoryActor extends UntypedActor {
         try {
             soapWrapper = new SOAPWrapper(messageBuffer);
             OrchestrateProvideAndRegisterRequest msg = new OrchestrateProvideAndRegisterRequest(
-                    originalRequest.getRequestHandler(), getSelf(), soapWrapper.getSoapBody(), xForwardedFor, mimeDocument
+                    originalRequest.getRequestHandler(), getSelf(), soapWrapper.getSoapBody(), xForwardedFor, mimeDocument, messageID
             );
             pnrOrchestrator.tell(msg, getSelf());
         } catch (SOAPWrapper.SOAPParseException ex) {

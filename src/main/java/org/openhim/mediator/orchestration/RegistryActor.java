@@ -17,6 +17,7 @@ import org.apache.http.HttpStatus;
 import org.openhim.mediator.datatypes.AssigningAuthority;
 import org.openhim.mediator.datatypes.Identifier;
 import org.openhim.mediator.denormalization.PIXRequestActor;
+import org.openhim.mediator.denormalization.RegistryResponseError;
 import org.openhim.mediator.engine.MediatorConfig;
 import org.openhim.mediator.engine.messages.*;
 import org.openhim.mediator.messages.*;
@@ -44,7 +45,9 @@ public class RegistryActor extends UntypedActor {
     private ActorRef requestHandler;
     private String xForwardedFor;
     private String messageBuffer;
-    private Identifier patientIdBuffer;
+    private Identifier patientId;
+    private Identifier resolvedPatientId;
+    private String messageID;
     private boolean isStoredQuery;
 
 
@@ -93,22 +96,25 @@ public class RegistryActor extends UntypedActor {
         String enterpriseIdentifierAuthority = config.getProperty("client.requestedAssigningAuthority");
         String enterpriseIdentifierAuthorityId = config.getProperty("client.requestedAssigningAuthorityId");
         AssigningAuthority authority = new AssigningAuthority(enterpriseIdentifierAuthority, enterpriseIdentifierAuthorityId);
-        ResolvePatientIdentifier msg = new ResolvePatientIdentifier(requestHandler, getSelf(), patientIdBuffer, authority);
+        ResolvePatientIdentifier msg = new ResolvePatientIdentifier(requestHandler, getSelf(), patientId, authority);
         resolvePatientIDActor.tell(msg, getSelf());
     }
 
     private void enrichEnterpriseIdentifier(ResolvePatientIdentifierResponse msg) {
-        patientIdBuffer = msg.getIdentifier();
+        resolvedPatientId = msg.getIdentifier();
 
-        if (patientIdBuffer !=null) {
+        if (resolvedPatientId != null) {
             log.info("Resolved patient enterprise identifier. Enriching message...");
             ActorSelection enrichActor = getContext().actorSelection(config.userPathFor("enrich-registry-stored-query"));
-            EnrichRegistryStoredQuery enrichMsg = new EnrichRegistryStoredQuery(requestHandler, getSelf(), messageBuffer, patientIdBuffer);
+            EnrichRegistryStoredQuery enrichMsg = new EnrichRegistryStoredQuery(requestHandler, getSelf(), messageBuffer, resolvedPatientId);
             enrichActor.tell(enrichMsg, getSelf());
         } else {
-            log.info("Could not resolve patient identifier");
-            FinishRequest response = new FinishRequest("Unknown patient identifier", "text/plain", HttpStatus.SC_NOT_FOUND);
-            requestHandler.tell(response, getSelf());
+            String err = "Could not resolve patient identifier " + patientId;
+            log.error(err);
+
+            RegistryResponseError registryResponseError = new RegistryResponseError(RegistryResponseError.STORED_QUERY_RESPONSE_ACTION, messageID);
+            registryResponseError.addRegistryError(new RegistryResponseError.RegistryError(RegistryResponseError.XDS_UNKNOWN_PATIENTID, err));
+            requestHandler.tell(registryResponseError.toFinishRequest(), getSelf());
         }
     }
 
@@ -150,7 +156,7 @@ public class RegistryActor extends UntypedActor {
             ATNAAudit audit = new ATNAAudit(type);
             audit.setMessage(messageBuffer);
 
-            audit.setParticipantIdentifiers(Collections.singletonList(patientIdBuffer));
+            audit.setParticipantIdentifiers(Collections.singletonList(patientId));
             audit.setUniqueId("NotParsed");
             audit.setOutcome(outcome);
             audit.setSourceIP(xForwardedFor);
@@ -169,7 +175,9 @@ public class RegistryActor extends UntypedActor {
 
         } else if (msg instanceof ParsedRegistryStoredQuery) { //resolve patient id
             log.info("Parsed contents. Resolving patient enterprise identifier...");
-            patientIdBuffer = ((ParsedRegistryStoredQuery) msg).getPatientId();
+
+            messageID = ((ParsedRegistryStoredQuery) msg).getMessageId();
+            patientId = ((ParsedRegistryStoredQuery) msg).getPatientId();
             lookupEnterpriseIdentifier();
 
             sendAuditMessage(ATNAAudit.TYPE.REGISTRY_QUERY_RECEIVED, true); //audit

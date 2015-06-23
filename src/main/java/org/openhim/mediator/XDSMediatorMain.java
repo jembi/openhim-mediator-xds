@@ -151,8 +151,6 @@ public class XDSMediatorMain {
         }
 
         log.info(String.format("%s listening on %s:%s", config.getName(), config.getServerHost(), config.getServerPort()));
-        while (true) {
-            System.in.read();
-        }
+        Thread.currentThread().join();
     }
 }

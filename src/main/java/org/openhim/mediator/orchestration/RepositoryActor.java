@@ -13,6 +13,7 @@ import akka.actor.UntypedActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.openhim.mediator.denormalization.CSDRequestActor;
 import org.openhim.mediator.denormalization.PIXRequestActor;
@@ -67,7 +68,10 @@ public class RepositoryActor extends UntypedActor {
     private void readMessage() {
         contentType = originalRequest.getHeaders().get("Content-Type");
 
-        if (contentType!=null && (contentType.contains("multipart/related") || contentType.contains("multipart/form-data"))) {
+        if (contentType != null
+                && (StringUtils.containsIgnoreCase(contentType, "multipart/related") || StringUtils.containsIgnoreCase(
+                contentType, "multipart/form-data"))) {
+
             log.info("Message is multipart. Parsing contents...");
             XDSbMimeProcessorActor.MimeMessage mimeMsg = new XDSbMimeProcessorActor.MimeMessage(originalRequest.getRequestHandler(), getSelf(), originalRequest.getBody(), contentType);
             mtomProcessor.tell(mimeMsg, getSelf());
